@@ -1,0 +1,13 @@
+name: TheMazeRunner
+version: '${project.version}'
+main: com.panda.themazerunner.TheMazeRunner
+api-version: '1.21'
+prefix: TheMazeRunner
+authors: [Panda]
+description: A maze runner game plugin.
+commands:
+  gate:
+    description: 迷宫大门管理命令
+    usage: /gate <wand|select|create|open|close> [args]
+    aliases: [tmrgate]
+

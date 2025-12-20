@@ -1,0 +1,8 @@
+<component name="ArtifactManager">
+  <artifact type="jar" name="The Maze Runner">
+    <output-path>$PROJECT_DIR$/out/artifacts/The Maze Runner</output-path>
+    <root id="archive" name="The Maze Runner.jar">
+      <element id="module-output" name="TheMazeRunner" />
+    </root>
+  </artifact>
+</component>
