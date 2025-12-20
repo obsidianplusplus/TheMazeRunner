@@ -281,13 +281,6 @@ public class GateCommand implements CommandExecutor, TabCompleter {
                     gate.setShellOnly(val);
                     sender.sendMessage("§a仅渲染外壳已设置为: " + val);
                 }
-                case "delay" -> {
-                    int val = Integer.parseInt(args[3]);
-                    if (val < 0)
-                        val = 0;
-                    gate.setAnimationDelay(val);
-                    sender.sendMessage("§a动画预热延迟已设置为: " + val + " ticks");
-                }
                 default -> sender.sendMessage("§c未知属性: " + prop);
             }
         } catch (IllegalArgumentException e) {
@@ -303,15 +296,7 @@ public class GateCommand implements CommandExecutor, TabCompleter {
 
         String sub = args[0].toLowerCase();
 
-        if (sub.equals("create")) {
-            // /gate create <name> [dist] [time]
-            if (args.length == 3) {
-                return filterStartsWith(args[2], Arrays.asList("-1", "5", "10", "15")); // 推荐距离
-            }
-            if (args.length == 4) {
-                return filterStartsWith(args[3], Arrays.asList("3", "5", "10")); // 推荐时长
-            }
-        } else if (sub.equals("select")) {
+        if (sub.equals("select")) {
             if (args.length == 2) {
                 return filterStartsWith(args[1], Arrays.asList("left", "right"));
             }
@@ -326,8 +311,7 @@ public class GateCommand implements CommandExecutor, TabCompleter {
             }
             if (args.length == 3) {
                 return filterStartsWith(args[2],
-                        Arrays.asList("axis", "safemode", "movemode", "viewrange", "cull", "keepopen", "shellonly",
-                                "delay"));
+                        Arrays.asList("axis", "safemode", "movemode", "viewrange", "cull", "keepopen", "shellonly"));
             }
             if (args.length == 4) {
                 String prop = args[2].toLowerCase();
@@ -339,7 +323,6 @@ public class GateCommand implements CommandExecutor, TabCompleter {
                     case "movemode" -> filterStartsWith(args[3],
                             Arrays.stream(Gate.MoveMode.values()).map(Enum::name).collect(Collectors.toList()));
                     case "keepopen", "shellonly" -> filterStartsWith(args[3], Arrays.asList("true", "false"));
-                    case "delay" -> filterStartsWith(args[3], Arrays.asList("3", "5", "10"));
                     default -> Collections.emptyList();
                 };
             }

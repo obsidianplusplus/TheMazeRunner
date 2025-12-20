@@ -75,8 +75,8 @@ public class Gate {
     private record BlockKey(int x, int y, int z) {
     }
 
-    // 默认 5 ticks 预热延迟
-    private int animationDelay = 5;
+    // 添加这个常量：3 ticks (150ms) 的预热时间，保证丝滑
+    private static final long ANIM_DELAY = 4L;
 
     private final JavaPlugin plugin;
     private final String name;
@@ -300,14 +300,6 @@ public class Gate {
         this.shellOnly = shellOnly;
     }
 
-    public void setAnimationDelay(int delay) {
-        this.animationDelay = delay;
-    }
-
-    public int getAnimationDelay() {
-        return animationDelay;
-    }
-
     public void open() {
         if (state != State.CLOSED)
             return;
@@ -333,7 +325,7 @@ public class Gate {
         startEffects(leftRegion, leftDir);
 
         // 修改：等待时间 = 动画时长 + 预热延迟
-        long totalWait = getDurationTicks() + animationDelay;
+        long totalWait = getDurationTicks() + ANIM_DELAY;
 
         // 状态更新任务：动画结束时切换状态
         plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
@@ -379,11 +371,6 @@ public class Gate {
             respawnDisplays(rightRegion, rightDisplays, rightDir);
         }
 
-        // reverseAnimate 内部本身有 1 tick 延迟
-        // 额外等待 (animationDelay - 1)
-        // 延迟就是 animationDelay，与开门保持一致
-        long waitBeforeMove = Math.max(0, animationDelay - 1);
-
         plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
             reverseAnimate(leftDisplays, leftDir);
             reverseAnimate(rightDisplays, rightDir);
@@ -392,12 +379,12 @@ public class Gate {
             if (safetyCheckDelay < 1)
                 safetyCheckDelay = 1;
             plugin.getServer().getScheduler().runTaskLater(plugin, this::handleSafeMode, safetyCheckDelay);
-        }, waitBeforeMove);
+        }, 2L);
 
         // 开启特效
         startEffects(leftRegion, leftDir);
 
-        long totalWait = getDurationTicks() + animationDelay;
+        long totalWait = getDurationTicks() + ANIM_DELAY;
 
         // 状态更新与方块恢复任务
         plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
@@ -690,7 +677,7 @@ public class Gate {
                             cur.getRightRotation()));
                 }
             }
-        }, 1L);
+        }, ANIM_DELAY);
     }
 
     private void configureDisplay(BlockDisplay display, Region region, Vector moveVector) {
@@ -787,7 +774,6 @@ public class Gate {
         data.put("cullHeight", cullHeight);
         data.put("keepOpenDisplays", keepOpenDisplays);
         data.put("shellOnly", shellOnly);
-        data.put("animationDelay", animationDelay);
         return data;
     }
 
@@ -835,8 +821,6 @@ public class Gate {
             gate.setKeepOpenDisplays((boolean) data.get("keepOpenDisplays"));
         if (data.containsKey("shellOnly"))
             gate.setShellOnly((boolean) data.get("shellOnly"));
-        if (data.containsKey("animationDelay"))
-            gate.setAnimationDelay(((Number) data.get("animationDelay")).intValue());
 
         return gate;
     }
