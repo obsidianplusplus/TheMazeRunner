@@ -71,6 +71,23 @@ public class Region implements Iterable<Block> {
     }
 
     /**
+     * 检查位置是否在区域内
+     *
+     * @param loc 位置
+     * @return 是否在区域内
+     */
+    public boolean contains(Location loc) {
+        if (loc == null || !loc.getWorld().equals(world))
+            return false;
+        double x = loc.getX();
+        double y = loc.getY();
+        double z = loc.getZ();
+        return x >= min.getX() && x <= max.getX()
+                && y >= min.getY() && y <= max.getY()
+                && z >= min.getZ() && z <= max.getZ();
+    }
+
+    /**
      * 高效遍历区域内的所有方块
      * 避免创建巨大的 List，减少内存开销
      *

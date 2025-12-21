@@ -75,7 +75,7 @@ public class Gate {
     private record BlockKey(int x, int y, int z) {
     }
 
-    // 添加这个常量：3 ticks (150ms) 的预热时间，保证丝滑
+    // 常量预热时间，保证丝滑
     private static final long ANIM_DELAY = 4L;
 
     private final JavaPlugin plugin;
@@ -786,10 +786,12 @@ public class Gate {
         Object leftObj = data.get("leftRegion");
         Object rightObj = data.get("rightRegion");
 
+        @SuppressWarnings("unchecked")
         Map<String, Object> leftMap = (leftObj instanceof org.bukkit.configuration.MemorySection)
                 ? ((org.bukkit.configuration.MemorySection) leftObj).getValues(true)
                 : (Map<String, Object>) leftObj;
 
+        @SuppressWarnings("unchecked")
         Map<String, Object> rightMap = (rightObj instanceof org.bukkit.configuration.MemorySection)
                 ? ((org.bukkit.configuration.MemorySection) rightObj).getValues(true)
                 : (Map<String, Object>) rightObj;

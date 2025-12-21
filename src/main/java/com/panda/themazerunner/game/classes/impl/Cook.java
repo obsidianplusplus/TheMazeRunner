@@ -78,7 +78,10 @@ public class Cook extends GameClass {
         ItemStack stew = new ItemStack(Material.SUSPICIOUS_STEW);
         SuspiciousStewMeta meta = (SuspiciousStewMeta) stew.getItemMeta();
         if (meta != null) {
-            meta.addCustomEffect(new PotionEffect(type, duration, 0), true);
+            // Suppress deprecation for legacy support or until SuspiciousEffectEntry is
+            // fully adopted
+            @SuppressWarnings("deprecation")
+            boolean success = meta.addCustomEffect(new PotionEffect(type, duration, 0), true);
             stew.setItemMeta(meta);
         }
         return stew;

@@ -1,0 +1,147 @@
+# 语言文件 - 迷宫行者 (The Maze Runner)
+# 版本: 1.0
+
+prefix: "&8[&e迷宫行者&8] &r"
+
+classes:
+  runner:
+    name: "&b行者"
+    description:
+      - "&7我们需要跑得更快."
+      - "&7专属能力: &f速度 I, 跳跃提升 I"
+  guardian:
+    name: "&c守护者"
+    description:
+      - "&7保护你的队友."
+      - "&7专属能力: &f抗性提升 I, 额外生命值"
+  medjack:
+    name: "&d医疗兵"
+    description:
+      - "&7战场上的希望."
+      - "&7专属能力: &f治疗药水, 生命恢复"
+  builder:
+    name: "&a建筑师"
+    description:
+      - "&7建造防御工事."
+      - "&7专属能力: &f方块, 挖掘速度提升"
+  cook:
+    name: "&6农夫/厨师"
+    description:
+      - "&7后勤保障, 掌握试炼."
+      - "&7专属能力: &f高级食物, 不祥之瓶"
+
+errors:
+  class_not_found: "&c未找到该职业."
+  class_equipped: "&a你已选择职业: %class%"
+
+gate:
+  wand_given: "&a已获取大门选取工具 (木斧)。左键点击选取点1，右键点击选取点2。"
+  select_pos1: "&a已设置点 1: %location%"
+  select_pos2: "&a已设置点 2: %location%"
+  select_left_saved: "&a已保存当前选区为 **左侧** 大门区域。"
+  select_right_saved: "&a已保存当前选区为 **右侧** 大门区域。"
+  create_success: "&a成功创建大门: %name%"
+  create_fail_no_selection: "&c创建失败: 请先选择左右两侧的大门区域。"
+  create_fail_exists: "&c创建失败: 大门 %name% 已存在。"
+  open_success: "&a正在开启大门: %name%"
+  close_success: "&a正在关闭大门: %name%"
+  not_found: "&c未找到大门: %name%"
+  invalid_world: "&c错误: 选择点必须在同一个世界。"
+  cmd_usage: "&c用法: /gate <wand|select|create|open|close> [参数]"
+  wand_name: "&e&l大门选取工具"
+  wand_lore:
+    - "&7左键点击: 选择点 1"
+    - "&7右键点击: 选择点 2"
+  usage_select: "&c用法: /gate select <left|right>"
+  usage_create: "&c用法: /gate create <名称> [滑动距离] [动画秒数]"
+  usage_control: "&c用法: /gate <open|close> <名称>"
+  open_fail: "&c开启失败: 大门可能已开启或正在运行中。"
+  close_fail: "&c关闭失败: 大门可能已关闭或正在运行中。"
+
+identities:
+  savior:
+    name: "&e救世主"
+  wckd:
+    name: "&cW.C.K.D (实验员)"
+  wanderer:
+    name: "&7流浪者"
+
+area:
+  wand_given: "&a已获取区域选取工具 (木锄)。左键点击选取点1，右键点击选取点2。"
+  wand_name: "&e&l区域选取工具"
+  wand_lore:
+    - "&7左键点击: 选择点 1"
+    - "&7右键点击: 选择点 2"
+  pos1_set: "&a已设置点 1: %location%"
+  pos2_set: "&a已设置点 2: %location%"
+  usage: "&c用法: /area <wand|setglade|setbonfire|setbonfirearea|setbell>"
+  no_selection: "&c请先使用区域工具选择区域。"
+  glade_set: "&a已将当前选区设置为: 林间空地区域。"
+  bonfire_set: "&a已将看向的方块设置为: 余烬篝火位置。"
+  bonfire_area_set: "&a已将当前选区设置为: 篝火会议区域。"
+  bell_set: "&a已将看向的方块设置为: 集结钟位置。"
+  wckd_cannot_ring_bell: "&cW.C.K.D 成员无法敲响集结钟。"
+  meeting_start: "&a篝火会议已开始，铜灯已点亮。"
+  meeting_stop: "&a篝火会议已结束，铜灯已熄灭。"
+  bell_right_obtained: "&e你获得了敲响集结钟的权利 (一次性)。"
+  bell_ring_success: "&e集结钟已敲响！全员集合！"
+  no_bell_right: "&c你没有敲钟权，无法敲响集结钟。只有在死亡后才能获得一次敲钟权。"
+  return_countdown: "&c&l警告: 大门将在 %seconds% 秒后关闭! 请立即返回林间空地!"
+  gates_closed: "&c&l大门已关闭! 隔离区已封锁。"
+  late_arrival: "&e你在最后一刻赶回了林间空地。"
+  wanderer_restricted: "&c流浪者目前被禁止进入林间空地。"
+  wanderer_access_enabled: "&a已&e允许&a流浪者进入林间空地。"
+  wanderer_access_disabled: "&a已&c禁止&a流浪者进入林间空地。"
+  usage: "&c用法: /area <wand|setglade|setbonfire|setbonfirearea|setbell|togglewanderer>"
+
+vote:
+  ticket:
+    name: "&e投票券 (Voting Ticket)"
+    lore: "&7右键点击打开投票界面"
+  trembling:
+    title: "&4确定的灾难?"
+    subtitle: "&c这一票将导致平局..."
+    item_name: "&4确定的灾难?"
+  received: "&a你收到了投票券，请在会议期间做出你的选择。"
+  not_in_progress: "&c目前不是投票时间。"
+  gui_title: "&1选择流放对象 (Vote to Exile)"
+  candidate_lore: "&7点击投票流放此人"
+  abstain_name: "&c弃权 (Abstain)"
+  success: "&a投票成功。"
+
+judgment:
+  start_header: "&4=== 审判时刻 (Judgment) ==="
+  accused: "&c被告: %player%"
+  instruction: "&e请使用命令或界面决定: 宽恕 (Forgive) 或 流放 (Exile)"
+  gui_title: "&4审判: %player%"
+  forgive_name: "&a宽恕 (Forgive)"
+  exile_name: "&4流放 (Exile)"
+  voted_exile: "&c你投了流放票。"
+  voted_forgive: "&a你投了宽恕票。"
+  result_header: "&6审判结果: "
+  result_forgive: "&a宽恕 %count% 票"
+  result_exile: "&c流放 %count% 票"
+
+area:
+  tea_time:
+    start_header: "&6=== 茶水时间 (Tea Time) ==="
+    start_body: "&e你们有 1 分钟的时间进行自由讨论 (文字/语音)。"
+    end: "&c茶水时间结束。"
+  meeting:
+    start_header: "&6=== 正式会议开始 (Formal Meeting) ==="
+    start_body_1: "&e发放投票券... 请在会议结束前决定是否流放某人。"
+    start_body_2: "&e会议总时长: %minutes% 分钟。每人发言时间: %seconds% 秒。"
+    start_body_3: "&e现在开始轮流发言。期间仅发言者可以语音，其他人静音。文字聊天保持开放。"
+    speaker: "&a当前发言: %player%"
+    duration: "&7发言时长: %seconds% 秒"
+    end: "&c会议结束。"
+    result_tie: "&a投票结果: 无人被流放 (平票或弃权居多)。"
+    trial_time: "&c审判时间: 30秒!"
+  punishment:
+    forgiven_broadcast: "&a%player% 被宽恕了!"
+    forgiven_target: "&a你被宽恕了。"
+    exiled_broadcast: "&c%player% 被流放了!"
+    exiled_target: "&c你被流放了!"
+    ominous: "&5审判未达成一致 (平票)! 触发不详惩罚!"
+
+
