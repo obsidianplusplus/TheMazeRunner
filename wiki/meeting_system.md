@@ -1,3 +1,5 @@
+[< 返回主页 (Back to Home)](../README.md)
+
 # 会议与审判 (Meeting & Trial)
 
 本文档详细介绍了迷宫行者 (The Maze Runner) 插件中的 **会议与审判系统**。这是一个包含社交推理、投票决策和生存审判的核心玩法机制。

@@ -1,3 +1,5 @@
+[< 返回主页 (Back to Home)](../README.md)
+
 # 身份系统 (Identity System)
 
 本文档详细介绍了迷宫行者 (The Maze Runner) 插件中的 **身份系统**。该系统独立于原有的职业系统 (Classes)，用于定义玩家在剧情或游戏中的特殊角色。

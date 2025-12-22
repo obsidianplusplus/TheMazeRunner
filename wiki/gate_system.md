@@ -1,3 +1,5 @@
+[< 返回主页 (Back to Home)](../README.md)
+
 # 大门系统 (Gate System) 技术白皮书
 
 > **版本适用性**: Minecraft 1.20+ (核心依赖 `BlockDisplay` 实体)
