@@ -132,7 +132,7 @@ public class VoteListener implements Listener {
 
             if (validClick) {
                 if (vm.wouldCauseTie(isExile) && !vm.hasWarnedTremblingHand(voter)) {
-                    vm.setWarnedTremblingHand(voter);
+                    vm.setWarnedTremblingHand(voter, isExile);
 
                     voter.playSound(voter.getLocation(), org.bukkit.Sound.ENTITY_WARDEN_HEARTBEAT, 1.0f, 0.5f);
                     voter.playSound(voter.getLocation(), org.bukkit.Sound.BLOCK_RESPAWN_ANCHOR_SET_SPAWN, 1.0f, 0.5f);
@@ -158,6 +158,40 @@ public class VoteListener implements Listener {
                 }
 
                 vm.castJudgment(voter, isExile);
+            }
+        }
+    }
+
+    @EventHandler
+    public void onInventoryClose(org.bukkit.event.inventory.InventoryCloseEvent event) {
+        if (!(event.getPlayer() instanceof Player))
+            return;
+
+        Player player = (Player) event.getPlayer();
+        VoteManager vm = plugin.getVoteManager();
+
+        // 只有在审判进行中才需要限制
+        if (!vm.isTrialInProgress() || vm.getCurrentAccused() == null) {
+            return;
+        }
+
+        Component title = event.getView().title();
+        String plainTitle = PlainTextComponentSerializer.plainText().serialize(title);
+        String judgmentTitlePart = PlainTextComponentSerializer.plainText()
+                .serialize(plugin.getLanguageManager().getComponent("judgment.gui_title"))
+                .replace("%player%", "").trim();
+
+        // 检查是否是审判界面
+        if (plainTitle.contains(judgmentTitlePart)) {
+            // 如果玩家还没有投票，强制重新打开
+            if (!vm.hasVotedInJudgment(player)) {
+                // 需要延迟一点打开，否则可能会被本次关闭事件覆盖
+                org.bukkit.Bukkit.getScheduler().runTask(plugin, () -> {
+                    // 再次检查是否还在审判中，防止审判刚好结束
+                    if (vm.isTrialInProgress() && vm.getCurrentAccused() != null) {
+                        vm.openJudgmentGui(player);
+                    }
+                });
             }
         }
     }

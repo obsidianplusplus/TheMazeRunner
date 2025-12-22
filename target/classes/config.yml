@@ -1,6 +1,0 @@
-# The Maze Runner Configuration
-# 语言文件 (位于 messages 文件夹内)
-language: zh_CN.yml
-
-# 正式会议每人发言时长 (秒)
-formal_meeting_duration: 600

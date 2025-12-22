@@ -74,7 +74,6 @@ area:
     - "&7右键点击: 选择点 2"
   pos1_set: "&a已设置点 1: %location%"
   pos2_set: "&a已设置点 2: %location%"
-  usage: "&c用法: /area <wand|setglade|setbonfire|setbonfirearea|setbell>"
   no_selection: "&c请先使用区域工具选择区域。"
   glade_set: "&a已将当前选区设置为: 林间空地区域。"
   bonfire_set: "&a已将看向的方块设置为: 余烬篝火位置。"
@@ -93,6 +92,27 @@ area:
   wanderer_access_enabled: "&a已&e允许&a流浪者进入林间空地。"
   wanderer_access_disabled: "&a已&c禁止&a流浪者进入林间空地。"
   usage: "&c用法: /area <wand|setglade|setbonfire|setbonfirearea|setbell|togglewanderer>"
+
+  tea_time:
+    start_header: "&6=== 茶水时间 (Tea Time) ==="
+    start_body: "&e你们有 1 分钟的时间进行自由讨论 (文字/语音)。"
+    end: "&c茶水时间结束。"
+  meeting:
+    start_header: "&6=== 正式会议开始 (Formal Meeting) ==="
+    start_body_1: "&e发放投票券... 请在会议结束前决定是否流放某人。"
+    start_body_2: "&e会议总时长: %minutes% 分钟。每人发言时间: %seconds% 秒。"
+    start_body_3: "&e现在开始轮流发言。期间仅发言者可以语音，其他人静音。文字聊天保持开放。"
+    speaker: "&a当前发言: %player%"
+    duration: "&7发言时长: %seconds% 秒"
+    end: "&c会议结束。"
+    result_tie: "&a投票结果: 无人被流放 (平票或弃权居多)。"
+    trial_time: "&c审判时间: 30秒!"
+  punishment:
+    forgiven_broadcast: "&a%player% 被宽恕了!"
+    forgiven_target: "&a你被宽恕了。"
+    exiled_broadcast: "&c%player% 被流放了!"
+    exiled_target: "&c你被流放了!"
+    ominous: "&5审判未达成一致 (平票)! 触发不详惩罚!"
 
 vote:
   ticket:
@@ -122,26 +142,6 @@ judgment:
   result_forgive: "&a宽恕 %count% 票"
   result_exile: "&c流放 %count% 票"
 
-area:
-  tea_time:
-    start_header: "&6=== 茶水时间 (Tea Time) ==="
-    start_body: "&e你们有 1 分钟的时间进行自由讨论 (文字/语音)。"
-    end: "&c茶水时间结束。"
-  meeting:
-    start_header: "&6=== 正式会议开始 (Formal Meeting) ==="
-    start_body_1: "&e发放投票券... 请在会议结束前决定是否流放某人。"
-    start_body_2: "&e会议总时长: %minutes% 分钟。每人发言时间: %seconds% 秒。"
-    start_body_3: "&e现在开始轮流发言。期间仅发言者可以语音，其他人静音。文字聊天保持开放。"
-    speaker: "&a当前发言: %player%"
-    duration: "&7发言时长: %seconds% 秒"
-    end: "&c会议结束。"
-    result_tie: "&a投票结果: 无人被流放 (平票或弃权居多)。"
-    trial_time: "&c审判时间: 30秒!"
-  punishment:
-    forgiven_broadcast: "&a%player% 被宽恕了!"
-    forgiven_target: "&a你被宽恕了。"
-    exiled_broadcast: "&c%player% 被流放了!"
-    exiled_target: "&c你被流放了!"
-    ominous: "&5审判未达成一致 (平票)! 触发不详惩罚!"
+
 
 

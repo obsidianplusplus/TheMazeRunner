@@ -11,6 +11,8 @@ import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.inventory.meta.SkullMeta;
+import org.bukkit.enchantments.Enchantment;
+import org.bukkit.inventory.ItemFlag;
 
 import java.util.*;
 
@@ -41,9 +43,9 @@ public class VoteManager {
     private boolean isTrialInProgress = false;
     private Player currentAccused = null;
     /**
-     * 记录已收到平票警告的玩家
+     * 记录已收到平票警告的玩家以及他们选择的方向 (true=Exile, false=Forgive)
      */
-    private final Set<UUID> tremblingHandWarnedPlayers = new HashSet<>(); // Tracks players warned about tie
+    private final Map<UUID, Boolean> tremblingHandChoices = new HashMap<>(); // Tracks players warned about tie
 
     public VoteManager(TheMazeRunner plugin) {
         this.plugin = plugin;
@@ -209,7 +211,8 @@ public class VoteManager {
         this.currentAccused = accused;
         this.isTrialInProgress = true;
         this.judgmentVotes.clear();
-        this.tremblingHandWarnedPlayers.clear(); // 重置警告记录
+        this.judgmentVotes.clear();
+        this.tremblingHandChoices.clear(); // 重置警告记录
 
         LanguageManager lm = plugin.getLanguageManager();
 
@@ -254,6 +257,26 @@ public class VoteManager {
 
         gui.setItem(11, forgive);
         gui.setItem(15, exile);
+
+        // 如果玩家之前触发了"颤抖的手"，恢复那个选项为不详之瓶
+        if (tremblingHandChoices.containsKey(voter.getUniqueId())) {
+            boolean isExileChoice = tremblingHandChoices.get(voter.getUniqueId());
+
+            ItemStack ominous = new ItemStack(Material.OMINOUS_BOTTLE);
+            ItemMeta meta = ominous.getItemMeta();
+            meta.displayName(plugin.getLanguageManager().getComponent("vote.trembling.item_name")
+                    .decoration(TextDecoration.BOLD, true));
+
+            meta.addEnchant(Enchantment.UNBREAKING, 1, true);
+            meta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
+            ominous.setItemMeta(meta);
+
+            if (isExileChoice) {
+                gui.setItem(15, ominous);
+            } else {
+                gui.setItem(11, ominous);
+            }
+        }
 
         voter.openInventory(gui);
     }
@@ -361,16 +384,17 @@ public class VoteManager {
      * @return 是否已警告
      */
     public boolean hasWarnedTremblingHand(Player player) {
-        return tremblingHandWarnedPlayers.contains(player.getUniqueId());
+        return tremblingHandChoices.containsKey(player.getUniqueId());
     }
 
     /**
      * 设置玩家已收到"颤抖的手"警告。
      *
      * @param player 玩家
+     * @param choice true=exile, false=forgive
      */
-    public void setWarnedTremblingHand(Player player) {
-        tremblingHandWarnedPlayers.add(player.getUniqueId());
+    public void setWarnedTremblingHand(Player player, boolean choice) {
+        tremblingHandChoices.put(player.getUniqueId(), choice);
     }
 
     /**
@@ -409,5 +433,15 @@ public class VoteManager {
             forgive++;
 
         return exile == forgive;
+    }
+
+    /**
+     * 检查玩家是否已经在当前的审判中投票。
+     *
+     * @param player 玩家
+     * @return 是否已投票
+     */
+    public boolean hasVotedInJudgment(Player player) {
+        return judgmentVotes.containsKey(player.getUniqueId());
     }
 }
