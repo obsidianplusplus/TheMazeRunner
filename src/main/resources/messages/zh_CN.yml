@@ -57,6 +57,22 @@ gate:
   usage_control: "&c用法: /gate <open|close> <名称>"
   open_fail: "&c开启失败: 大门可能已开启或正在运行中。"
   close_fail: "&c关闭失败: 大门可能已关闭或正在运行中。"
+  distance_error: "&c距离参数格式错误，已使用默认值 (自动)。"
+  duration_error: "&c时长参数格式错误，已使用默认值 (5秒)。"
+  usage_edit: "&c用法: /gate edit <大门名> <属性> <值...>"
+  edit_properties_hint: "&7属性: axis, safemode, movemode, viewrange, cull, keepopen, shellonly"
+  axis_set: "&a大门轴向已设置为: %value%"
+  safemode_set: "&a安全模式已设置为: %value%"
+  movemode_set: "&a移动模式已设置为: %value%"
+  teleport_limit_warning: "&6[警告] 当前动画时长 (%ticks% ticks) 超过 TELEPORT 模式限制 (59 ticks)。"
+  teleport_limit_hint: "&6实际动画将被限制为 59 ticks，但逻辑时长保持不变。"
+  viewrange_set: "&a视距已设置为: %value%"
+  cull_usage: "&c需要提供宽高: /gate edit <name> cull <width> <height>"
+  cull_set: "&a裁剪框已设置为: %w%x%h%"
+  keepopen_set: "&a保持常驻已设置为: %value%"
+  shellonly_set: "&a仅渲染外壳已设置为: %value%"
+  unknown_property: "&c未知属性: %property%"
+  invalid_args: "&c参数无效: %error%"
 
 identities:
   savior:
@@ -92,6 +108,9 @@ area:
   wanderer_access_enabled: "&a已&e允许&a流浪者进入林间空地。"
   wanderer_access_disabled: "&a已&c禁止&a流浪者进入林间空地。"
   usage: "&c用法: /area <wand|setglade|setbonfire|setbonfirearea|setbell|togglewanderer>"
+  only_players: "&c只有玩家可以使用此命令。"
+  wand_select_hint: "&c请使用区域工具 (木锄) 点击方块进行选择。"
+  target_block_hint: "&c请对准一个方块。"
 
   tea_time:
     start_header: "&6=== 茶水时间 (Tea Time) ==="
@@ -141,6 +160,7 @@ judgment:
   result_header: "&6审判结果: "
   result_forgive: "&a宽恕 %count% 票"
   result_exile: "&c流放 %count% 票"
+
 
 
 

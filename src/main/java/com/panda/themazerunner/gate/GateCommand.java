@@ -135,7 +135,7 @@ public class GateCommand implements CommandExecutor, TabCompleter {
                 try {
                     distance = Double.parseDouble(args[2]);
                 } catch (NumberFormatException e) {
-                    sender.sendMessage("§c距离参数格式错误，已使用默认值 (自动)。");
+                    sender.sendMessage(languageManager.getMessage("gate.distance_error"));
                 }
             }
 
@@ -145,7 +145,7 @@ public class GateCommand implements CommandExecutor, TabCompleter {
                     if (duration < 1)
                         duration = 1;
                 } catch (NumberFormatException e) {
-                    sender.sendMessage("§c时长参数格式错误，已使用默认值 (5秒)。");
+                    sender.sendMessage(languageManager.getMessage("gate.duration_error"));
                 }
             }
 
@@ -219,8 +219,8 @@ public class GateCommand implements CommandExecutor, TabCompleter {
 
     private void handleEdit(CommandSender sender, String[] args) {
         if (args.length < 4) {
-            sender.sendMessage("§c用法: /gate edit <大门名> <属性> <值...>");
-            sender.sendMessage("§7属性: axis, safemode, movemode, viewrange, cull, keepopen, shellonly");
+            sender.sendMessage(languageManager.getMessage("gate.usage_edit"));
+            sender.sendMessage(languageManager.getMessage("gate.edit_properties_hint"));
             return;
         }
 
@@ -238,53 +238,59 @@ public class GateCommand implements CommandExecutor, TabCompleter {
                 case "axis" -> {
                     Gate.Axis axis = Gate.Axis.valueOf(args[3].toUpperCase());
                     gate.setAxis(axis);
-                    sender.sendMessage("§a大门轴向已设置为: " + axis);
+                    sender.sendMessage(languageManager.getMessage("gate.axis_set").replace("%value%", axis.name()));
                 }
                 case "safemode" -> {
                     Gate.SafeMode mode = Gate.SafeMode.valueOf(args[3].toUpperCase());
                     gate.setSafeMode(mode);
-                    sender.sendMessage("§a安全模式已设置为: " + mode);
+                    sender.sendMessage(languageManager.getMessage("gate.safemode_set").replace("%value%", mode.name()));
                 }
                 case "movemode" -> {
                     Gate.MoveMode mode = Gate.MoveMode.valueOf(args[3].toUpperCase());
                     gate.setMoveMode(mode);
-                    sender.sendMessage("§a移动模式已设置为: " + mode);
+                    sender.sendMessage(languageManager.getMessage("gate.movemode_set").replace("%value%", mode.name()));
 
                     if (mode == Gate.MoveMode.TELEPORT && gate.getDurationTicks() > 59) {
-                        sender.sendMessage(
-                                "§6[警告] 当前动画时长 (" + gate.getDurationTicks() + " ticks) 超过 TELEPORT 模式限制 (59 ticks)。");
-                        sender.sendMessage("§6实际动画将被限制为 59 ticks，但逻辑时长保持不变。");
+                        sender.sendMessage(languageManager.getMessage("gate.teleport_limit_warning").replace("%ticks%",
+                                String.valueOf(gate.getDurationTicks())));
+                        sender.sendMessage(languageManager.getMessage("gate.teleport_limit_hint"));
                     }
                 }
                 case "viewrange" -> {
                     float val = Float.parseFloat(args[3]);
                     gate.setViewRange(val);
-                    sender.sendMessage("§a视距已设置为: " + val);
+                    sender.sendMessage(
+                            languageManager.getMessage("gate.viewrange_set").replace("%value%", String.valueOf(val)));
                 }
                 case "cull" -> {
                     if (args.length < 5) {
-                        sender.sendMessage("§c需要提供宽高: /gate edit <name> cull <width> <height>");
+                        sender.sendMessage(languageManager.getMessage("gate.cull_usage"));
                         return;
                     }
                     float w = Float.parseFloat(args[3]);
                     float h = Float.parseFloat(args[4]);
                     gate.setCulling(w, h);
-                    sender.sendMessage("§a裁剪框已设置为: " + w + "x" + h);
+                    sender.sendMessage(languageManager.getMessage("gate.cull_set")
+                            .replace("%w%", String.valueOf(w))
+                            .replace("%h%", String.valueOf(h)));
                 }
                 case "keepopen" -> {
                     boolean val = Boolean.parseBoolean(args[3]);
                     gate.setKeepOpenDisplays(val);
-                    sender.sendMessage("§a保持常驻已设置为: " + val);
+                    sender.sendMessage(
+                            languageManager.getMessage("gate.keepopen_set").replace("%value%", String.valueOf(val)));
                 }
                 case "shellonly" -> {
                     boolean val = Boolean.parseBoolean(args[3]);
                     gate.setShellOnly(val);
-                    sender.sendMessage("§a仅渲染外壳已设置为: " + val);
+                    sender.sendMessage(
+                            languageManager.getMessage("gate.shellonly_set").replace("%value%", String.valueOf(val)));
                 }
-                default -> sender.sendMessage("§c未知属性: " + prop);
+                default ->
+                    sender.sendMessage(languageManager.getMessage("gate.unknown_property").replace("%property%", prop));
             }
         } catch (IllegalArgumentException e) {
-            sender.sendMessage("§c参数无效: " + e.getMessage());
+            sender.sendMessage(languageManager.getMessage("gate.invalid_args").replace("%error%", e.getMessage()));
         }
     }
 

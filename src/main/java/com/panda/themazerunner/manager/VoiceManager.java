@@ -15,6 +15,11 @@ import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 
+/**
+ * 语音管理器 (Simple Voice Chat 集成)
+ * <p>
+ * 负责管理 VoiceChat 插件的连接，处理会议语音、静音等逻辑。
+ */
 public class VoiceManager implements VoicechatPlugin {
 
     private final JavaPlugin plugin;
@@ -75,6 +80,8 @@ public class VoiceManager implements VoicechatPlugin {
     /**
      * 设置唯一发言者 (用于会议)
      * 其他参与者将被静音或限制麦克风
+     * <p>
+     * TODO: 目前仅为占位符，需要进一步实现具体的静音逻辑
      *
      * @param currentSpeaker      当前发言者
      * @param meetingParticipants 会议参与者列表

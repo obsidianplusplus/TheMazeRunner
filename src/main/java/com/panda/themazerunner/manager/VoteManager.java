@@ -211,7 +211,6 @@ public class VoteManager {
         this.currentAccused = accused;
         this.isTrialInProgress = true;
         this.judgmentVotes.clear();
-        this.judgmentVotes.clear();
         this.tremblingHandChoices.clear(); // 重置警告记录
 
         LanguageManager lm = plugin.getLanguageManager();

@@ -36,7 +36,7 @@ public class AreaCommand implements CommandExecutor, TabCompleter {
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (!(sender instanceof Player)) {
-            sender.sendMessage("§c只有玩家可以使用此命令。");
+            sender.sendMessage(languageManager.getMessage("area.only_players"));
             return true;
         }
 
@@ -60,7 +60,7 @@ public class AreaCommand implements CommandExecutor, TabCompleter {
             // 用法: /area select <pos1|pos2>
             // 这里为了简化 wand 逻辑，wand 交互事件可以直接调用 setPlayerSelection
             // 但如果通过命令调用：
-            sender.sendMessage("§c请使用区域工具 (木锄) 点击方块进行选择。");
+            sender.sendMessage(languageManager.getMessage("area.wand_select_hint"));
             return true;
         }
 
@@ -80,7 +80,7 @@ public class AreaCommand implements CommandExecutor, TabCompleter {
         if (sub.equals("setbonfire")) {
             Block target = player.getTargetBlockExact(10);
             if (target == null) {
-                player.sendMessage("§c请对准一个方块。");
+                player.sendMessage(languageManager.getMessage("area.target_block_hint"));
                 return true;
             }
             areaManager.setBonfireLocation(target.getLocation());
@@ -104,7 +104,7 @@ public class AreaCommand implements CommandExecutor, TabCompleter {
         if (sub.equals("setbell")) {
             Block target = player.getTargetBlockExact(10);
             if (target == null) {
-                player.sendMessage("§c请对准一个方块。");
+                player.sendMessage(languageManager.getMessage("area.target_block_hint"));
                 return true;
             }
             areaManager.setGatheringBellLocation(target.getLocation());

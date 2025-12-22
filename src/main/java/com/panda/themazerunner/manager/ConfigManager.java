@@ -3,6 +3,11 @@ package com.panda.themazerunner.manager;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
 
+/**
+ * 配置管理器
+ * <p>
+ * 负责插件配置文件的加载、重载以及读取。
+ */
 public class ConfigManager {
 
     private final JavaPlugin plugin;
