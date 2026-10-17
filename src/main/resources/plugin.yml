@@ -1,16 +1,30 @@
 name: TheMazeRunner
 version: '${project.version}'
 main: com.panda.themazerunner.TheMazeRunner
-api-version: '1.21'
+api-version: '26.3'
 prefix: TheMazeRunner
 authors: [Panda]
-description: A maze runner game plugin.
+description: Maze survival, exploration, cooperative escape and WCKD experiments.
+softdepend: [voicechat]
 commands:
+  maze:
+    description: 合作迷宫逃脱
+    usage: /maze <join|class|leave|journal|rally|meeting|vote|skill|template|validate|debug>
+  class:
+    description: 选择本局职业
+    usage: /class
   gate:
+    permission: tmr.admin
     description: 迷宫大门管理命令
     usage: /gate <wand|select|create|open|close> [args]
     aliases: [tmrgate]
   area:
+    permission: tmr.admin
     description: 管理区域和会议的命令
     usage: /area <subcommand>
 
+
+permissions:
+  tmr.admin:
+    description: 管理地图、大门及对局
+    default: op

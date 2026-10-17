@@ -33,6 +33,7 @@ public class VoteManager {
     /**
      * 投票记录: 投票者 UUID -> 候选人 UUID (null 表示弃权)
      */
+    private final Set<UUID> eligible = new HashSet<>();
     private final Map<UUID, UUID> votes = new HashMap<>(); // Voter -> Candidate (null for abstain)
     /**
      * 审判投票记录: 投票者 UUID -> 是否流放 (true=流放, false=宽恕)
@@ -51,6 +52,30 @@ public class VoteManager {
         this.plugin = plugin;
     }
 
+    public void reset() {
+        isVotingInProgress = false; isTrialInProgress = false; currentAccused = null;
+        epoch++; votes.clear(); judgmentVotes.clear(); eligible.clear(); tremblingHandChoices.clear();
+    }
+
+    private long epoch;
+    public static final class VoteMenu implements org.bukkit.inventory.InventoryHolder {
+        private Inventory inventory;
+        public final boolean trial;
+        public final long epoch;
+        VoteMenu(boolean trial, long epoch) { this.trial=trial; this.epoch=epoch; }
+        public Inventory getInventory() { return inventory; }
+    }
+    public boolean validMenu(VoteMenu menu) { return menu.epoch==epoch; }
+    public boolean isTicket(ItemStack item) {
+        return item != null && item.hasItemMeta() && Long.valueOf(epoch).equals(item.getItemMeta().getPersistentDataContainer().get(
+            new org.bukkit.NamespacedKey(plugin,"vote_ticket"), org.bukkit.persistence.PersistentDataType.LONG));
+    }
+    public void removeParticipant(Player p) {
+        UUID id=p.getUniqueId(); eligible.remove(id); votes.remove(id); judgmentVotes.remove(id);
+        votes.entrySet().removeIf(e -> id.equals(e.getValue()));
+        if (currentAccused != null && currentAccused.getUniqueId().equals(id)) endTrial();
+    }
+
     // 投票阶段
 
     /**
@@ -59,6 +84,10 @@ public class VoteManager {
      * @param participants 参与投票的玩家列表
      */
     public void startVoting(List<Player> participants) {
+        if (isVotingInProgress || isTrialInProgress) return;
+        epoch++;
+        eligible.clear();
+        participants.stream().filter(Player::isOnline).forEach(p -> eligible.add(p.getUniqueId()));
         isVotingInProgress = true;
         votes.clear();
 
@@ -73,6 +102,7 @@ public class VoteManager {
         meta.lore(Collections.singletonList(
                 plugin.getLanguageManager().getComponent("vote.ticket.lore")
                         .decoration(TextDecoration.ITALIC, false)));
+        meta.getPersistentDataContainer().set(new org.bukkit.NamespacedKey(plugin,"vote_ticket"),org.bukkit.persistence.PersistentDataType.LONG,epoch);
         ticket.setItemMeta(meta);
 
         for (Player p : participants) {
@@ -87,7 +117,7 @@ public class VoteManager {
      * @param voter 投票者
      */
     public void openVoteGui(Player voter) {
-        if (!isVotingInProgress) {
+        if (!com.panda.themazerunner.game.match.VoteRules.mayCast(isVotingInProgress, eligible, votes, voter.getUniqueId())) {
             voter.sendMessage(plugin.getLanguageManager().getComponent("vote.not_in_progress"));
             return;
         }
@@ -95,13 +125,13 @@ public class VoteManager {
         // 假设会议参与者即为所有在线玩家，或者从 AreaManager 获取
         // 这里暂时使用在线玩家以保持稳健性，后续应从 AreaManager 获取参与者列表
         List<Player> candidates = new ArrayList<>(plugin.getAreaManager().getMeetingParticipants());
-        if (candidates.isEmpty()) {
-            candidates.addAll(Bukkit.getOnlinePlayers());
-        }
+        candidates.removeIf(p -> !eligible.contains(p.getUniqueId()) || !p.isOnline());
 
-        Inventory gui = Bukkit.createInventory(null, 54,
+        VoteMenu holder = new VoteMenu(false, epoch);
+        Inventory gui = Bukkit.createInventory(holder, 54,
                 plugin.getLanguageManager().getComponent("vote.gui_title"));
 
+        holder.inventory=gui;
         // 添加候选人头像
         int index = 0;
         for (Player p : candidates) {
@@ -137,22 +167,14 @@ public class VoteManager {
      * @param candidateId 候选人 UUID (null 为弃权)
      */
     public void castVote(Player voter, UUID candidateId) {
+        if (!com.panda.themazerunner.game.match.VoteRules.mayCast(isVotingInProgress, eligible, votes, voter.getUniqueId())
+                || candidateId != null && (!eligible.contains(candidateId) || Bukkit.getPlayer(candidateId) == null)) return;
         votes.put(voter.getUniqueId(), candidateId); // null 表示弃权
         voter.sendMessage(plugin.getLanguageManager().getComponent("vote.success"));
         voter.closeInventory();
 
-        // 移除一张投票券
-        for (ItemStack item : voter.getInventory().getContents()) {
-            if (item != null && item.getType() == Material.PAPER && item.hasItemMeta()) {
-                // 使用 Adventure API 检查物品名
-                Component displayName = item.getItemMeta().displayName();
-                // 简单检查是否包含特定文本 (这里可以使用更严格的序列化检查或 PDC)
-                // TODO: 使用 PersistentDataContainer 进行更安全的物品识别
-                if (displayName != null) {
-                    item.setAmount(item.getAmount() - 1);
-                    break;
-                }
-            }
+        for (int slot=0;slot<voter.getInventory().getSize();slot++) {
+            if (isTicket(voter.getInventory().getItem(slot))) voter.getInventory().setItem(slot,null);
         }
     }
 
@@ -162,34 +184,8 @@ public class VoteManager {
      * @return 票数最高的玩家，如果是平票或无人得票则返回 null
      */
     public Player calculateExileCandidate() {
-        Map<UUID, Integer> counts = new HashMap<>();
-        for (UUID cand : votes.values()) {
-            if (cand == null)
-                continue; // 弃权
-            counts.put(cand, counts.getOrDefault(cand, 0) + 1);
-        }
-
-        if (counts.isEmpty())
-            return null;
-
-        UUID maxUuid = null;
-        int maxVotes = -1;
-        boolean tie = false;
-
-        for (Map.Entry<UUID, Integer> entry : counts.entrySet()) {
-            if (entry.getValue() > maxVotes) {
-                maxVotes = entry.getValue();
-                maxUuid = entry.getKey();
-                tie = false;
-            } else if (entry.getValue() == maxVotes) {
-                tie = true;
-            }
-        }
-
-        if (tie || maxUuid == null)
-            return null; // 平票或无票 -> 不流放
-
-        return Bukkit.getPlayer(maxUuid);
+        UUID nominee = com.panda.themazerunner.game.match.VoteRules.nominee(votes, eligible, id -> Bukkit.getPlayer(id) != null);
+        return nominee == null ? null : Bukkit.getPlayer(nominee);
     }
 
     /**
@@ -208,6 +204,7 @@ public class VoteManager {
      * @param accused 被告玩家
      */
     public void startJudgment(Player accused) {
+        if (accused == null || !eligible.contains(accused.getUniqueId())) return;
         this.currentAccused = accused;
         this.isTrialInProgress = true;
         this.judgmentVotes.clear();
@@ -222,8 +219,9 @@ public class VoteManager {
         Bukkit.broadcast(lm.getComponent("judgment.instruction"));
 
         // 强制为所有在线玩家打开审判 GUI
-        for (Player p : Bukkit.getOnlinePlayers()) {
-            openJudgmentGui(p);
+        for (UUID id : eligible) {
+            Player p = Bukkit.getPlayer(id);
+            if (p != null) openJudgmentGui(p);
         }
     }
 
@@ -233,15 +231,17 @@ public class VoteManager {
      * @param voter 投票者
      */
     public void openJudgmentGui(Player voter) {
-        if (!isTrialInProgress || currentAccused == null)
+        if (!isTrialInProgress || currentAccused == null || !eligible.contains(voter.getUniqueId()) || judgmentVotes.containsKey(voter.getUniqueId()))
             return;
 
         LanguageManager lm = plugin.getLanguageManager();
 
-        Inventory gui = Bukkit.createInventory(null, 27,
+        VoteMenu holder = new VoteMenu(true, epoch);
+        Inventory gui = Bukkit.createInventory(holder, 27,
                 lm.getComponent("judgment.gui_title")
                         .replaceText(b -> b.match("%player%").replacement(currentAccused.getName())));
 
+        holder.inventory=gui;
         ItemStack forgive = new ItemStack(Material.LIME_WOOL);
         ItemMeta fMeta = forgive.getItemMeta();
         fMeta.displayName(
@@ -287,6 +287,7 @@ public class VoteManager {
      * @param exile true 为流放，false 为宽恕
      */
     public void castJudgment(Player voter, boolean exile) {
+        if (!com.panda.themazerunner.game.match.VoteRules.mayCast(isTrialInProgress, eligible, judgmentVotes, voter.getUniqueId())) return;
         judgmentVotes.put(voter.getUniqueId(), exile);
         LanguageManager lm = plugin.getLanguageManager();
         voter.sendMessage(exile ? lm.getComponent("judgment.voted_exile")
@@ -326,7 +327,7 @@ public class VoteManager {
             return JudgmentResult.EXILE;
         if (forgive > exile)
             return JudgmentResult.FORGIVE;
-        return JudgmentResult.PUNISHMENT;
+        return JudgmentResult.FORGIVE; // Ties and abstentions never cause unavoidable team damage.
     }
 
     /**

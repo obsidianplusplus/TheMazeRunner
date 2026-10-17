@@ -21,6 +21,8 @@ public class ConfigManager {
     private void loadConfig() {
         plugin.saveDefaultConfig();
         plugin.reloadConfig();
+        plugin.getConfig().options().copyDefaults(true);
+        plugin.saveConfig();
         config = plugin.getConfig();
     }
 
@@ -29,6 +31,6 @@ public class ConfigManager {
     }
 
     public int getFormalMeetingDuration() {
-        return plugin.getConfig().getInt("formal_meeting_duration", 600); // Default 600 seconds
+        return Math.max(15, Math.min(120, plugin.getConfig().getInt("formal_meeting_duration", 60))); // Default 600 seconds
     }
 }

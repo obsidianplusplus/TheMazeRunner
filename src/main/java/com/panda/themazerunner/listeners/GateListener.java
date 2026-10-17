@@ -37,6 +37,7 @@ public class GateListener implements Listener {
      */
     @EventHandler
     public void onPlayerInteract(PlayerInteractEvent event) {
+        if (!event.getPlayer().hasPermission("tmr.admin")) return;
         ItemStack item = event.getItem();
         if (item == null || item.getType() != Material.WOODEN_AXE) {
             return;

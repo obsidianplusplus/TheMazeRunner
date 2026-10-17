@@ -40,6 +40,9 @@ public class LanguageManager {
         plugin.reloadConfig();
         String langFileName = plugin.getConfig().getString("language", "zh_CN.yml");
 
+        if(langFileName==null || !langFileName.matches("[A-Za-z0-9_-]+\\.yml")) {
+            plugin.getLogger().warning("Invalid language filename; using zh_CN.yml");langFileName="zh_CN.yml";
+        }
         File messagesDir = new File(plugin.getDataFolder(), "messages");
         if (!messagesDir.exists()) {
             messagesDir.mkdirs();

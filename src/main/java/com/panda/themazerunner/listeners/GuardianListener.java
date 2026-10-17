@@ -35,6 +35,7 @@ public class GuardianListener implements Listener {
         }
 
         Player player = event.getPlayer();
+        if (plugin.getMatchManager() == null || !plugin.getMatchManager().active(player)) return;
         ItemStack item = player.getInventory().getItemInMainHand();
 
         // 检查物品是否为拴绳
@@ -69,7 +70,7 @@ public class GuardianListener implements Listener {
                 // 强制拴住目标
                 // 注意: 对玩家使用 setLeashHolder 在某些版本可能没有视觉效果或需要客户端支持
                 // 在 1.21+ Paper 中，API 支持通常较好
-                target.setLeashHolder(player);
+                if (target instanceof Player || !target.setLeashHolder(player)) return;
 
                 // 扣除一个拴绳 (模拟生存模式消耗)
                 if (!org.bukkit.GameMode.CREATIVE.equals(player.getGameMode())) {

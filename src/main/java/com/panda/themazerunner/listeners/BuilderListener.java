@@ -26,6 +26,7 @@ public class BuilderListener implements Listener {
     @EventHandler
     public void onBlockPlace(BlockPlaceEvent event) {
         Player player = event.getPlayer();
+        if (plugin.getMatchManager() == null || !plugin.getMatchManager().contains(player)) return;
 
         // 创造模式无视限制
         if (player.getGameMode() == GameMode.CREATIVE) {

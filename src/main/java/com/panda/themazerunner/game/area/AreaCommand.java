@@ -35,6 +35,9 @@ public class AreaCommand implements CommandExecutor, TabCompleter {
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+        if (!sender.hasPermission("tmr.admin")) { sender.sendMessage("需要 tmr.admin 权限。"); return true; }
+        com.panda.themazerunner.TheMazeRunner owner=com.panda.themazerunner.TheMazeRunner.getInstance();
+        if(owner.getMatchManager()!=null && owner.getMatchManager().busy()) { sender.sendMessage("请先结束对局再编辑区域。");return true; }
         if (!(sender instanceof Player)) {
             sender.sendMessage(languageManager.getMessage("area.only_players"));
             return true;
