@@ -1,3 +1,5 @@
+> 历史设计文档：部分内容未实现或已调整。当前状态请以 [审计报告](../docs/AUDIT_AND_ROADMAP.md) 和 [验证记录](../docs/VALIDATION.md) 为准；性能与语音宣传未经实测。
+
 [< 返回主页 (Back to Home)](../README.md)
 
 # 迷宫行者 (The Maze Runner) - 职业介绍

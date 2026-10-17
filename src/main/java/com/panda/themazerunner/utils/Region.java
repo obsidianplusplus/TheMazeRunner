@@ -32,6 +32,10 @@ public class Region implements Iterable<Block> {
         this.world = loc1.getWorld();
         this.min = Vector.getMinimum(loc1.toVector(), loc2.toVector());
         this.max = Vector.getMaximum(loc1.toVector(), loc2.toVector());
+        for(double value:new double[]{min.getX(),min.getY(),min.getZ(),max.getX(),max.getY(),max.getZ()})
+            if(!Double.isFinite(value) || Math.abs(value)>30000000)throw new IllegalArgumentException("Region coordinates are invalid");
+        double volume=(max.getBlockX()-(double)min.getBlockX()+1)*(max.getBlockY()-(double)min.getBlockY()+1)*(max.getBlockZ()-(double)min.getBlockZ()+1);
+        if(volume>65536)throw new IllegalArgumentException("Region exceeds the 65536 block operation budget");
     }
 
     /**

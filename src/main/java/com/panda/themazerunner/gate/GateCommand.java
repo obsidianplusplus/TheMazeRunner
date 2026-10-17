@@ -45,6 +45,11 @@ public class GateCommand implements CommandExecutor, TabCompleter {
      */
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+        if (!sender.hasPermission("tmr.admin")) { sender.sendMessage("需要 tmr.admin 权限。"); return true; }
+        com.panda.themazerunner.TheMazeRunner owner=com.panda.themazerunner.TheMazeRunner.getInstance();
+        if(owner.getMatchManager()!=null && owner.getMatchManager().busy()) {
+            sender.sendMessage("请先结束对局；地图运行期间不能通过管理命令更改大门。");return true;
+        }
         if (args.length == 0) {
             sendUsage(sender);
             return true;
@@ -155,7 +160,9 @@ public class GateCommand implements CommandExecutor, TabCompleter {
                 return true;
             }
 
-            Gate gate = gateManager.createGate(name, buffer[0], buffer[1], distance, duration);
+            Gate gate;
+            try { gate = gateManager.createGate(name, buffer[0], buffer[1], distance, duration); }
+            catch(IllegalArgumentException | IllegalStateException error) { sender.sendMessage("无法创建大门："+error.getMessage());return true; }
             if (gate != null) {
                 player.sendMessage(languageManager.getMessage("gate.create_success").replace("%name%", name));
             } else {

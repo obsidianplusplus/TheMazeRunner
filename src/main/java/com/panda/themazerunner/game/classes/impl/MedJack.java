@@ -27,7 +27,7 @@ public class MedJack extends GameClass {
     @Override
     public void onEquip(Player player) {
         // 给予生命恢复 I
-        player.addPotionEffect(new PotionEffect(PotionEffectType.REGENERATION, Integer.MAX_VALUE, 0, false, false));
+        // Healing is finite: no permanent regeneration.
 
         // --- 物品 ---
         // 喷溅型治疗药水 (II)
@@ -70,7 +70,7 @@ public class MedJack extends GameClass {
         // 为了简便，给弩和治疗箭矢
         player.getInventory().addItem(crossbow);
 
-        ItemStack tippedArrow = new ItemStack(Material.TIPPED_ARROW, 64);
+        ItemStack tippedArrow = new ItemStack(Material.TIPPED_ARROW, 8);
         PotionMeta arrowMeta = (PotionMeta) tippedArrow.getItemMeta();
         if (arrowMeta != null) {
             arrowMeta.setBasePotionType(PotionType.HEALING);

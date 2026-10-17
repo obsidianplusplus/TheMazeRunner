@@ -62,13 +62,13 @@ public class AreaManager {
         YamlConfiguration config = YamlConfiguration.loadConfiguration(dataFile);
 
         if (config.contains("glade")) {
-            gladeRegion = Region.deserialize(config.getConfigurationSection("glade").getValues(false));
+            gladeRegion = readRegion(config,"glade");
         }
         if (config.contains("bonfire_loc")) {
             bonfireLocation = config.getLocation("bonfire_loc");
         }
         if (config.contains("bonfire_area")) {
-            bonfireRegion = Region.deserialize(config.getConfigurationSection("bonfire_area").getValues(false));
+            bonfireRegion = readRegion(config,"bonfire_area");
         }
         if (config.contains("bell_loc")) {
             gatheringBellLocation = config.getLocation("bell_loc");
@@ -78,6 +78,11 @@ public class AreaManager {
         }
 
         plugin.getLogger().info("区域数据加载完成。");
+    }
+
+    private Region readRegion(YamlConfiguration config,String key) {
+        try {var section=config.getConfigurationSection(key);if(section==null)throw new IllegalArgumentException("Expected region section");return Region.deserialize(section.getValues(false));}
+        catch(RuntimeException error){plugin.getLogger().warning("Invalid area "+key+": "+error.getMessage());return null;}
     }
 
     /**
@@ -174,11 +179,27 @@ public class AreaManager {
         if (!locs[0].getWorld().equals(locs[1].getWorld())) {
             return null;
         }
-        return new Region(locs[0], locs[1]);
+        try{return new Region(locs[0],locs[1]);}
+        catch(IllegalArgumentException error){Player player=Bukkit.getPlayer(uuid);if(player!=null)player.sendMessage("选区无效："+error.getMessage());return null;}
     }
 
     // Meeting Logic
-    private boolean isMeetingInProgress = false;
+    private volatile boolean isMeetingInProgress = false;
+    private volatile Set<UUID> meetingSnapshot = Set.of();
+    public Set<UUID> getMeetingSnapshot() { return meetingSnapshot; }
+    private void updateMeetingSnapshot() {
+        meetingSnapshot = meetingParticipants.stream().map(Player::getUniqueId).collect(java.util.stream.Collectors.toUnmodifiableSet());
+    }
+    public void removeParticipant(Player player) {
+        playerSelections.remove(player.getUniqueId());
+        meetingParticipants.remove(player); speakerQueue.remove(player); updateMeetingSnapshot();
+        player.removePotionEffect(PotionEffectType.DARKNESS); player.removePotionEffect(PotionEffectType.GLOWING);
+    }
+    private long meetingEpoch;
+    private org.bukkit.scheduler.BukkitTask later(Runnable action, long delay) {
+        long epoch = meetingEpoch;
+        return Bukkit.getScheduler().runTaskLater(plugin, () -> { if (epoch == meetingEpoch && isMeetingInProgress) action.run(); }, delay);
+    }
 
     public boolean isMeetingInProgress() {
         return isMeetingInProgress;
@@ -213,6 +234,9 @@ public class AreaManager {
      * 播放音效，给予失明，并将林间空地的玩家传送至篝火周围
      */
     public void startMeeting() {
+        // Legacy social-deduction mechanics are opt-in, never the cooperative default.
+        if (!plugin.getConfig().getBoolean("legacy-meetings-enabled", false) || isMeetingInProgress
+                || TheMazeRunner.getInstance().getMatchManager()!=null && TheMazeRunner.getInstance().getMatchManager().busy()) return;
         if (bonfireRegion == null || bonfireLocation == null || gladeRegion == null)
             return;
 
@@ -238,12 +262,14 @@ public class AreaManager {
         for (Player player : Bukkit.getOnlinePlayers()) {
             if (gladeRegion.contains(player.getLocation())) {
                 playersInGlade.add(player);
-                meetingParticipants.add(player); // Add initial participants
+                meetingParticipants.add(player);
+            updateMeetingSnapshot(); // Add initial participants
             } else {
                 playersOutside.add(player);
             }
         }
 
+        updateMeetingSnapshot();
         // 处理已经在林间空地的玩家
         if (!playersInGlade.isEmpty()) {
             double radius = 5.0; // 圆形半径
@@ -277,7 +303,7 @@ public class AreaManager {
         startTeaTime(playersInGlade);
 
         // 5. 调度关闭大门 (与茶水时间一致, 60秒)
-        Bukkit.getScheduler().runTaskLater(TheMazeRunner.getInstance(), this::closeAllGatesAndEndReturnPhase, 1200L);
+        later(this::closeAllGatesAndEndReturnPhase, 1200L);
     }
 
     private void notifyOutsiders(List<Player> outsiders) {
@@ -332,6 +358,7 @@ public class AreaManager {
 
         if (!meetingParticipants.contains(player)) {
             meetingParticipants.add(player);
+            updateMeetingSnapshot();
         }
     }
 
@@ -349,7 +376,7 @@ public class AreaManager {
         TheMazeRunner.getInstance().getVoiceManager().startMeetingChat(players);
 
         // 1分钟 (1200 ticks) 后结束
-        Bukkit.getScheduler().runTaskLater(TheMazeRunner.getInstance(), this::stopTeaTime, 1200L);
+        later(this::stopTeaTime, 1200L);
     }
 
     public void stopTeaTime() {
@@ -446,8 +473,7 @@ public class AreaManager {
                 .replaceText(b -> b.match("%seconds%").replacement(String.valueOf(durationSeconds))));
 
         // 调度下一位
-        speakerTask = Bukkit.getScheduler()
-                .runTaskLater(TheMazeRunner.getInstance(), this::nextSpeaker, durationSeconds * 20L).getTaskId();
+        speakerTask = later(this::nextSpeaker, durationSeconds * 20L).getTaskId();
     }
 
     private void transitionToTrial() {
@@ -477,7 +503,7 @@ public class AreaManager {
         // Let's use a fixed time for tension.
         Bukkit.broadcast(TheMazeRunner.getInstance().getLanguageManager().getComponent("area.meeting.trial_time"));
 
-        Bukkit.getScheduler().runTaskLater(TheMazeRunner.getInstance(), () -> {
+        later(() -> {
             endTrial(vm);
         }, 30 * 20L);
     }
@@ -493,6 +519,7 @@ public class AreaManager {
         vm.endTrial();
         isTrialInProgress = false;
 
+        if (accused == null || !accused.isOnline()) { stopMeeting(); return; }
         switch (result) {
             case FORGIVE:
                 Bukkit.broadcast(lm.getComponent("area.punishment.forgiven_broadcast")
@@ -524,9 +551,10 @@ public class AreaManager {
     }
 
     public void stopMeeting() {
-        if (bonfireRegion == null)
-            return;
-
+        if (!isMeetingInProgress) return;
+        meetingEpoch++;
+        TheMazeRunner.getInstance().getVoteManager().reset();
+        globalRingRight = false;
         // 清理状态
         isMeetingInProgress = false;
         LanguageManager lm = TheMazeRunner.getInstance().getLanguageManager();
@@ -561,7 +589,7 @@ public class AreaManager {
 
         Bukkit.broadcast(lm.getComponent("area.meeting.end"));
 
-        bonfireRegion.forEachBlock(block -> {
+        if (bonfireRegion != null) bonfireRegion.forEachBlock(block -> {
             if (isCopperBulbVariant(block.getType())) {
                 block.setType(Material.OXIDIZED_COPPER_BULB);
                 if (block.getBlockData() instanceof Lightable) {
@@ -574,6 +602,7 @@ public class AreaManager {
 
         // Finally clear participants
         meetingParticipants.clear();
+        updateMeetingSnapshot();
         speakerQueue.clear();
     }
 

@@ -39,10 +39,10 @@ public class Runner extends GameClass {
 
         // --- 武器 ---
         // 铁剑
-        player.getInventory().addItem(new ItemStack(Material.IRON_SWORD));
+        player.getInventory().addItem(new ItemStack(Material.STONE_SWORD));
         // 风弹 (Wind Charge) - 需要 1.21+ API
         // 注意: 如果 API 版本较旧可能没有 WIND_CHARGE，请确保依赖正确
-        player.getInventory().addItem(new ItemStack(Material.WIND_CHARGE, 1));
+        // No launch shortcut across protected maze walls.
 
         // --- 护甲 ---
         // 皮革套装 (深绿色)

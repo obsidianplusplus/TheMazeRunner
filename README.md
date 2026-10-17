@@ -1,56 +1,63 @@
-# 迷宫行者 (The Maze Runner) 🏃‍♂️🧩
+# TheMazeRunner 2.0
 
-> **基于 Minecraft 1.21+ 的沉浸式迷宫生存插件**
-> *Immersive Maze Survival Plugin for Minecraft 1.21+*
+Java 25 / Paper API **26.3** 的《移动迷宫》多人游戏插件。默认是合作生存、探索和逃脱；另有独立 WCKD 实验对抗规则。保留现有 BlockDisplay 大门与原生服务端技术，不依赖客户端模组。Simple Voice Chat 可选。
 
-## 📚 简介 (Introduction)
+本分支已落地配置化对局、目标依赖、固定模板、通路验证、昼夜与预警事件、Griever 状态机、五职能力、短会议、恢复和统计。**自动化模拟验证不等于真实服务器验收**：视觉碰撞、原生寻路、真实物品组件持久化、Purpur 与多客户端负载仍需实测。
 
-**The Maze Runner** 是一款深度还原电影《移动迷宫》核心体验的 Minecraft 插件。它不仅仅是一个简单的玩法模组，更是一个包含完整的职业体系、动态场景交互、社会推理与审判机制的综合性游戏系统。
+26.3 迁移固定使用 Paper `26.3.build.200-stable`，插件声明 `api-version: 26.3`；旧版服务器不再是支持目标。现有服务器请先结束对局、完成玩家恢复、停服并备份世界及插件数据，再升级服务端。详见[26.3 升级记录](docs/UPGRADE_26_3.md)。
 
-## 🌟 核心特性 (Key Features)
+## 开始
 
-### 🚪 [大门系统 (Gate System)](wiki/gate_system.md)
-拥有电影级视觉效果的动态大门。
-- **丝滑动画**: 利用 `BlockDisplay` 实现 60FPS+ 的超流畅开关门动画。
-- **物理交互**: 真实的物理碰撞，支持气浪排斥 (Push Effect) 防止玩家卡死。
-- **高性能**: 动静分离设计，支持超远视距渲染，对服务器性能零负担。
+```sh
+mvn clean verify
+PYTHONPATH=tools python3 -m unittest discover -s tools -p 'test_*.py'
+```
 
-### 🛡️ [职业体系 (Classes)](wiki/classes.md)
-五大特色职业，各司其职，缺一不可。
-- **🏃 行者 (Runner)**: 极速侦查，绘制地图。
-- **🛡️ 守护者 (Guardian)**: 坦克与控制，拴绳大师。
-- **💉 医疗兵 (Med-jack)**: 战场急救，绝境求生。
-- **🏗️ 建筑师 (Builder)**: 唯一拥有改变地形与建造能力的工兵。
-- **🍳 农夫/厨师 (Cook)**: 后勤补给，风险博弈。
+产物：`target/TheMazeRunner-2.0.0-SNAPSHOT.jar`。使用 JDK 25 与 Maven 3.9+ 构建；放入 Paper 26.3 的 `plugins/` 后启动。
 
-### 🔥 [会议与审判 (Meeting & Trial)](wiki/meeting_system.md)
-深度的社交推理与生存博弈。
-- **集结钟**: 全局共享的召集机会，生死攸关的战术决策。
-- **茶水时间**: 这里的语音交流是生存的关键。
-- **投票审判**: 民主投票决定流放者，甚至触发 "颤抖之手" 的灾难平局。
+1. 管理员执行 `/maze template`，在新的独立世界 `tmr_arena` 分批建立一个固定模板。命令拒绝覆盖已有世界。初始化约需几十个 Tick；首次生成区块本身仍受服务端调度影响。
+2. `/maze validate` 校验配置、目标依赖、平面真实通行格与全部配置门同时关闭时的绕行路径。
+3. 玩家 `/maze` 打开大厅并点击加入；或 `/maze join`。入局前状态先落盘，再切换对局背包。GUI 选择职业；人数达到默认2人后自动倒计时20秒，准备5秒。
+4. 调查路线线索，视情况搜寻可选补给，修复撤离设施；完成必需目标后前往出口。总期限默认900秒，夜间有巡猎与大门变化，关闭支路前有文字和声音预警。
+5. 潜行右键第9格职责工具释放技能；`/maze journal` 查看任务；`/maze rally` 在空地集结；`/maze leave` 退出。核心模式没有隐藏内鬼或强制处决。
+6. 胜负结算后恢复背包、药水、生命、饱食、经验、模式等入局前状态，回到原位置。掉线默认保留30秒资格，不重新发装；超过宽限恢复原状态后等待下一局。
 
-### 📍 [区域管理 (Area System)](wiki/area_system.md)
-- **林间空地 (Glade)**: 玩家的安全港湾。
-- **流浪者限制**: 动态控制未知身份者的进入权限。
+管理员可用 `/maze start` 进行核心模式单人调试；`/maze stop` 中止；`/maze debug` 查看峰值适配器任务时间、实体/寻路计数、统计丢弃数；管理命令与地图工具均需 `tmr.admin`，默认只给op。
 
-### 🎭 [身份系统 (Identity System)](wiki/identity_system.md)
-独立于职业之外的剧情身份。
-- **救世主 (Savior)**
-- **W.C.K.D (实验员)**
-- **流浪者 (Wanderer)**
+## 内容和模式
 
-## 🛠️ 快速开始 (Quick Start)
+- `match.profile: FILM`：默认电影视觉基础，按顺序核对两区路线，再修复中继；剧情与密码为原创改编。
+- `match.profile: NOVEL`：两区地图可以并行记录，叠合后修复中继；内容配置与电影分开。没有宣称复制了原著完整密码。
+- `/maze mode EXPERIMENT`：至少4人，分配一位隐藏实验控制者。控制者每局3次支路干预、60秒冷却，预警后才生效，且不能封死必需路线。幸存者仍须探索撤离；全灭或超时由WCKD获胜。
+- 实验中 `/maze meeting`：空地至少3名存活者，消耗3补给；讨论30秒、投票15秒，最多2次，冷却120秒。仅会议快照成员可投一票，需原参会人数绝对多数；平票、弃权与离线不降低门槛。淘汰嫌疑人不会直接代替探索胜利。
+- `/maze mode CORE` 切回合作。人数下限可在配置中调整；管理员切到实验模式时下限至少改为4。旧会议系统仅为兼容保留且默认关闭，不与新对局同时运行。
 
-### 前置需求
-- Minecraft 1.21+ (Paper/Purpur 推荐)
-- Java 21+
+## 自有地图
 
-### 常用指令
-| 指令 | 描述 |
-| :--- | :--- |
-| `/gate` | 大门管理指令 |
-| `/area` | 区域与会议管理 |
-| `/class` | 职业选择与管理 |
+固定平面地图优先：所有点脚部处于同一Y，范围最大128×128格；没有随机无限生成。用 `/maze set <点位ID>` 设置出生点、出口、目标和巡猎点，用 `/maze bounds <minX> <maxX> <minZ> <maxZ>` 设置边界。`objectives` 与 `profiles.<版本>.objectives` 定义目标，`match.gates` 最多8门。目标点必须是真实可站立位置，不是墙内交互方块。
 
----
-*Developed by 🐼 Panda Studio*
+地图校验采用脚部/头部通行与安全地板的有限网格，检查所有目标、出口和门状态。它适用于本版本平面模板，不能证明楼梯、跳跃、游泳、红石机关或其他插件动态改图的可达性。失败会阻止入局；重置失败也会阻止下一局。
+
+## 数据与依赖
+
+玩家恢复：`plugins/TheMazeRunner/players/<UUID>.yml`，仅为恢复保存原状态，成功持久化还原后删除。背包使用 Paper 原生物品二进制、摘要校验和原子文件替换；异常时保留快照。不要删除待恢复文件。旧原型 `match-recovery.yml` 没有完整状态，升级前应先使用旧版完成旧对局恢复。
+
+统计：`statistics/events.csv`，异步有界队列，16MiB轮转，最多8个历史分段。记录局内匿名序号，不记录姓名、IP、聊天或语音。汇总当前或导出的完整CSV：
+
+```sh
+python3 tools/summarize_stats.py /path/to/events.csv --minimum-rounds 30
+```
+
+分析按模式、地图、版本、职业、阵营分层，排除中止/故障对局并标记小样本；不把胜率当成职业强度，也没有玩家水平或因果校正。跨分段统计前需保留一个CSV表头并合并数据。
+
+运行依赖仍为原有 Paper API 与可选 SVC API（provided）；JUnit 6、MockBukkit仅用于测试，不进入发布JAR。CI执行同样的构建与Python测试。
+
+## 交付记录
+
+- [原著改编基线、电影/小说/自创边界](docs/ADAPTATION_BIBLE.md)
+- [玩法、职业预算、架构与交互](docs/PRODUCT_AND_ARCHITECTURE.md)
+- [原仓库审计、修复影响与剩余风险](docs/AUDIT_AND_ROADMAP.md)
+- [构建、测试边界与实服验收](docs/VALIDATION.md)
+- [原始需求逐项覆盖](docs/REQUIREMENTS_COVERAGE.md)
+
+历史wiki保留旧版设计意图，不能代替当前实现与验证记录。没有使用原作图片、音乐、长篇原文或电影对白；本项目不是官方授权作品。

@@ -1,6 +1,145 @@
-# The Maze Runner Configuration
-# 语言文件 (位于 messages 文件夹内)
+# Java 25 / Paper 26.3. All times are seconds. Invalid types/ranges block joining.
 language: zh_CN.yml
-
-# 正式会议每人发言时长 (秒)
-formal_meeting_duration: 600
+legacy-meetings-enabled: false
+formal_meeting_duration: 60
+match:
+  mode: CORE
+  # Separate film/novel editorial profiles; no canonical password is copied.
+  profile: FILM
+  minimum-players: 2
+  maximum-players: 16
+  countdown-seconds: 20
+  preparation-seconds: 5
+  duration-seconds: 900
+  results-seconds: 8
+  reconnect-seconds: 30
+  day-seconds: 180
+  night-seconds: 90
+  warning-seconds: 10
+  points: {}
+  # Set points and these finite X/Z bounds, or /maze template creates its own world.
+  bounds: {}
+  gates: []
+resources:
+  initial: 12
+  cap: 64
+events:
+  interval-seconds: 120
+  duration-seconds: 30
+griever:
+  maximum: 4
+  detection: 18
+  damage: 4
+objectives:
+  route-1:
+    title: 记录西北区段路线
+    type: CLUE
+    point: route-1
+    requires: []
+    work: 1
+    supplies: 3
+    required: true
+  route-2:
+    title: 核对东北区段规律
+    type: CLUE
+    point: route-2
+    requires: [route-1]
+    work: 1
+    supplies: 3
+    required: true
+  relay:
+    title: 修复撤离中继设施
+    type: REPAIR
+    point: relay
+    requires: [route-2]
+    work: 4
+    supplies: 2
+    required: true
+  supply:
+    title: 搜索补给点（可选）
+    type: SUPPLY
+    point: supply
+    requires: []
+    work: 1
+    supplies: 8
+    required: false
+classes:
+  runner:
+    cost: 1
+    cooldown: 30
+    range: 24
+    items: [STONE_SWORD, COMPASS, SPYGLASS, BREAD:3]
+    armor: [LEATHER_BOOTS, LEATHER_LEGGINGS, LEATHER_CHESTPLATE, LEATHER_HELMET]
+  guardian:
+    cost: 2
+    cooldown: 40
+    range: 6
+    items: [STONE_SWORD, SHIELD, BREAD:3]
+    armor: [CHAINMAIL_BOOTS, CHAINMAIL_LEGGINGS, CHAINMAIL_CHESTPLATE, CHAINMAIL_HELMET]
+  medjack:
+    cost: 3
+    cooldown: 20
+    range: 5
+    items: [WOODEN_SWORD, BREAD:3]
+    armor: [LEATHER_BOOTS, LEATHER_LEGGINGS, LEATHER_CHESTPLATE, LEATHER_HELMET]
+  builder:
+    cost: 1
+    cooldown: 15
+    range: 4
+    items: [STONE_AXE, BREAD:3]
+    armor: [LEATHER_BOOTS, LEATHER_LEGGINGS, CHAINMAIL_CHESTPLATE, GOLDEN_HELMET]
+  cook:
+    cost: 2
+    cooldown: 30
+    range: 6
+    items: [WOODEN_SWORD, BREAD:6]
+    armor: [LEATHER_BOOTS, LEATHER_LEGGINGS, LEATHER_CHESTPLATE, LEATHER_HELMET]
+profiles:
+  FILM:
+    organization: WCKD
+    source: 'Film-inspired adaptation; objective wording and puzzle are original.'
+    briefing:
+      - '影像档案：不同区段的开启顺序可以记录和交叉核对。'
+      - '本局使用原创路线调查，不复制电影中的密码或装置。'
+  NOVEL:
+    organization: WICKED
+    source: 'Novel-inspired map overlay; no original password or quoted text.'
+    briefing:
+      - '地图档案：分别调查西、东区段，再在中继处叠合记录。'
+      - '本局地图叠合是多人改编，不与电影装置密码混用。'
+    objectives:
+      map-west:
+        title: 记录西区地图
+        type: CLUE
+        point: route-1
+        requires: []
+        work: 1
+        supplies: 3
+        required: true
+      map-east:
+        title: 记录东区地图
+        type: CLUE
+        point: route-2
+        requires: []
+        work: 1
+        supplies: 3
+        required: true
+      overlay:
+        title: 叠合记录并修复出口中继
+        type: REPAIR
+        point: relay
+        requires: [map-west, map-east]
+        work: 4
+        supplies: 2
+        required: true
+      supply:
+        title: 搜索补给点（可选）
+        type: SUPPLY
+        point: supply
+        requires: []
+        work: 1
+        supplies: 8
+        required: false
+hud:
+  boss: '%phase% | %seconds%s | 补给 %supplies% | 人数 %players%/%maximum%'
+  actionbar: '%area% | %objective% | %progress%/%total% | 技能 %cooldown%s'

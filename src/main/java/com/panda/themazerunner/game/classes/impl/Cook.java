@@ -36,7 +36,7 @@ public class Cook extends GameClass {
         // 金胡萝卜
         player.getInventory().addItem(new ItemStack(Material.GOLDEN_CARROT, 8));
         // 附魔金苹果 (极稀有)
-        player.getInventory().addItem(new ItemStack(Material.ENCHANTED_GOLDEN_APPLE, 1));
+        // Rare resources must be earned, not granted on equip.
 
         // 迷之炖菜 (生命恢复)
         player.getInventory().addItem(createSuspiciousStew(PotionEffectType.REGENERATION, 100)); // 5秒

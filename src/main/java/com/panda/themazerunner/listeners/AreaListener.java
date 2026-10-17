@@ -52,6 +52,7 @@ public class AreaListener implements Listener {
         }
 
         if (isWand) {
+            if (!event.getPlayer().hasPermission("tmr.admin")) return;
             event.setCancelled(true);
             Location loc = event.getClickedBlock().getLocation();
             int index = (event.getAction() == Action.LEFT_CLICK_BLOCK) ? 0 : 1;
@@ -150,12 +151,13 @@ public class AreaListener implements Listener {
         if (!areaManager.isMeetingInProgress())
             return;
 
-        boolean senderInMeeting = areaManager.isPlayerInMeeting(event.getPlayer());
+        java.util.Set<java.util.UUID> participants = areaManager.getMeetingSnapshot();
+        boolean senderInMeeting = participants.contains(event.getPlayer().getUniqueId());
 
         event.viewers().removeIf(audience -> {
             if (audience instanceof Player) {
                 Player recipient = (Player) audience;
-                boolean recipientInMeeting = areaManager.isPlayerInMeeting(recipient);
+                boolean recipientInMeeting = participants.contains(recipient.getUniqueId());
                 return senderInMeeting != recipientInMeeting;
             }
             return false; // 禁止其他或空闲玩家听到会议

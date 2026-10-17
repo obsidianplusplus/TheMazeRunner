@@ -114,12 +114,10 @@ public class GateManager {
      * @param name 大门名称
      */
     public void removeGate(String name) {
-        Gate gate = gates.remove(name.toLowerCase(java.util.Locale.ROOT));
-        if (gate != null) {
-            // 确保清理并恢复方块，防止留下空气洞
-            gate.cleanupDisplays();
-            gate.restoreBlocks();
-            gate.setState(Gate.State.CLOSED);
+        Gate gate=getGate(name);
+        if(gate!=null) {
+            if(!gate.forceRestore()){plugin.getLogger().warning("Cannot remove occupied gate: "+name);return;}
+            gate.dispose();gates.remove(name.toLowerCase(java.util.Locale.ROOT));
         }
     }
 
@@ -133,9 +131,7 @@ public class GateManager {
         for (Gate gate : gates.values()) {
             try {
                 // 强制清理实体并恢复方块
-                gate.cleanupDisplays();
-                gate.restoreBlocks();
-                gate.setState(Gate.State.CLOSED);
+                gate.shutdownSafely();
             } catch (Exception e) {
                 plugin.getLogger().warning("错误的关闭了大门" + gate.getName() + ": " + e.getMessage());
             }
@@ -182,7 +178,9 @@ public class GateManager {
             return false;
         }
 
-        Region region = new Region(locs[0], locs[1]);
+        Region region;
+        try{region=new Region(locs[0],locs[1]);}
+        catch(IllegalArgumentException error){org.bukkit.entity.Player player=org.bukkit.Bukkit.getPlayer(uuid);if(player!=null)player.sendMessage("选区无效："+error.getMessage());return false;}
 
         playerGateBuffers.putIfAbsent(uuid, new Region[2]);
         playerGateBuffers.get(uuid)[isLeft ? 0 : 1] = region;

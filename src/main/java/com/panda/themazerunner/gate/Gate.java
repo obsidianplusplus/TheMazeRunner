@@ -90,7 +90,7 @@ public class Gate {
 
     // --- 高级控制参数 ---
     private Axis axis = Axis.AUTO;
-    private SafeMode safeMode = SafeMode.NONE;
+    private SafeMode safeMode = SafeMode.PUSH;
     private MoveMode moveMode = MoveMode.TRANSFORM;
     private float viewRange = 12.0f;
     private float cullWidth = 0; // 0 表示自动计算
@@ -197,7 +197,7 @@ public class Gate {
                             debrisMat.createBlockData());
                 }
             }
-        }, 0L, 1L);
+        }, 0L, 4L);
     }
 
     private void stopEffects() {
@@ -207,8 +207,54 @@ public class Gate {
         }
     }
 
+    private long animationEpoch;
+    private boolean disposed;
+    private BukkitTask later(Runnable action, long delay) {
+        long epoch=animationEpoch;
+        return plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
+            if (!disposed && epoch==animationEpoch) {
+                try{action.run();}
+                catch(RuntimeException error){
+                    animationEpoch++;stopEffects();cleanupDisplays();
+                    if(!doorwayOccupied()){restoreBlocks();state=State.CLOSED;}else state=State.OPEN;
+                    plugin.getLogger().severe("Gate animation callback failed; state recovered: "+name+": "+error.getMessage());
+                }
+            }
+        }, delay);
+    }
+    public java.util.Set<com.panda.themazerunner.game.arena.WalkGrid.Cell> footprint() {
+        java.util.Set<com.panda.themazerunner.game.arena.WalkGrid.Cell> cells=new java.util.HashSet<>();
+        for (Region r:java.util.List.of(leftRegion,rightRegion))
+            for(int x=r.getMin().getBlockX();x<=r.getMax().getBlockX();x++)
+                for(int z=r.getMin().getBlockZ();z<=r.getMax().getBlockZ();z++) cells.add(new com.panda.themazerunner.game.arena.WalkGrid.Cell(x,z));
+        return java.util.Set.copyOf(cells);
+    }
+    public org.bukkit.World world() { return world; }
+    public boolean forceRestore() {
+        if(doorwayOccupied())return false;
+        animationEpoch++;stopEffects();if(cleanupTask!=null)cleanupTask.cancel();
+        restoreBlocks();cleanupDisplays();state=State.CLOSED;return true;
+    }
+    public void shutdownSafely() {
+        boolean occupied=doorwayOccupied();dispose();
+        if(!occupied)restoreBlocks();
+        else plugin.getLogger().warning("Gate checkpoint retained until doorway is clear: "+name);
+    }
+    public void dispose() {
+        disposed=true; animationEpoch++; stopEffects();
+        if (cleanupTask!=null) cleanupTask.cancel();
+        cleanupDisplays();
+    }
+
     public Gate(JavaPlugin plugin, String name, Region leftRegion, Region rightRegion, double slideDistance,
             int durationSeconds) {
+        if(name==null || !name.matches("[A-Za-z0-9_-]{1,48}"))throw new IllegalArgumentException("Invalid gate name");
+        if(!leftRegion.getWorld().equals(rightRegion.getWorld()) || !Double.isFinite(slideDistance) || slideDistance>128 || slideDistance < -1
+                || durationSeconds<1 || durationSeconds>30)throw new IllegalArgumentException("Invalid gate world, distance (-1..128) or duration (1..30)");
+        long volume=0;
+        for(Region region:java.util.List.of(leftRegion,rightRegion))volume+=(long)(region.getMax().getBlockX()-region.getMin().getBlockX()+1)
+                *(region.getMax().getBlockY()-region.getMin().getBlockY()+1)*(region.getMax().getBlockZ()-region.getMin().getBlockZ()+1);
+        if(volume>1024)throw new IllegalArgumentException("Gate volume budget exceeded (1024 blocks)");
         this.plugin = plugin;
         this.name = name;
         this.leftRegion = leftRegion;
@@ -221,6 +267,37 @@ public class Gate {
         this.displayOrigins = new HashMap<>();
         this.leftDisplays = new ArrayList<>();
         this.rightDisplays = new ArrayList<>();
+        recoverCheckpoint();
+    }
+
+    private java.nio.file.Path checkpoint() { return plugin.getDataFolder().toPath().resolve("gate-state").resolve(name+".yml"); }
+    private void snapshotClosedGate() throws java.io.IOException {
+        originalBlocks.clear();
+        var yaml=new org.bukkit.configuration.file.YamlConfiguration();yaml.set("world",world.getName());
+        for(Region region:java.util.List.of(leftRegion,rightRegion))region.forEachBlock(block->{
+            BlockKey key=new BlockKey(block.getX(),block.getY(),block.getZ());
+            BlockData data=block.getBlockData().clone();originalBlocks.put(key,data);
+            yaml.set("blocks."+key.x()+","+key.y()+","+key.z(),data.getAsString());
+        });
+        com.panda.themazerunner.persistence.AtomicFiles.write(checkpoint(),yaml.saveToString());
+    }
+    private void recoverCheckpoint() {
+        if(!java.nio.file.Files.exists(checkpoint()))return;
+        try {
+            var yaml=new org.bukkit.configuration.file.YamlConfiguration();yaml.load(checkpoint().toFile());
+            if(!world.getName().equals(yaml.getString("world")))throw new IllegalArgumentException("Gate checkpoint world mismatch");
+            var section=yaml.getConfigurationSection("blocks");
+            if(section==null || section.getKeys(false).size()>1024)throw new IllegalArgumentException("Invalid gate checkpoint size");
+            for(String id:section.getKeys(false)) {
+                String[] xyz=id.split(",");if(xyz.length!=3)throw new IllegalArgumentException("Invalid checkpoint coordinates");
+                BlockKey key=new BlockKey(Integer.parseInt(xyz[0]),Integer.parseInt(xyz[1]),Integer.parseInt(xyz[2]));
+                org.bukkit.Location loc=new org.bukkit.Location(world,key.x(),key.y(),key.z());
+                if(!leftRegion.contains(loc) && !rightRegion.contains(loc))throw new IllegalArgumentException("Checkpoint outside gate");
+                originalBlocks.put(key,org.bukkit.Bukkit.createBlockData(section.getString(id)));
+            }
+            if(doorwayOccupied())throw new IllegalStateException("Cannot recover an occupied gate");
+            restoreBlocks();
+        }catch(Exception error){throw new IllegalStateException("Gate recovery blocked: "+error.getMessage(),error);}
     }
 
     // --- 属性访问器 ---
@@ -284,10 +361,12 @@ public class Gate {
     }
 
     public void setViewRange(float viewRange) {
+        if(!Float.isFinite(viewRange) || viewRange<0.1f || viewRange>64)throw new IllegalArgumentException("view-range must be 0.1..64");
         this.viewRange = viewRange;
     }
 
     public void setCulling(float w, float h) {
+        if(!Float.isFinite(w) || !Float.isFinite(h) || w<0 || h<0 || w>256 || h>256)throw new IllegalArgumentException("culling must be finite in 0..256");
         this.cullWidth = w;
         this.cullHeight = h;
     }
@@ -301,8 +380,19 @@ public class Gate {
     }
 
     public void open() {
-        if (state != State.CLOSED)
+        try{openInternal();}
+        catch(RuntimeException error){
+            animationEpoch++;stopEffects();cleanupDisplays();
+            if(!doorwayOccupied()){restoreBlocks();state=State.CLOSED;}else state=State.OPEN;
+            plugin.getLogger().severe("Gate opening rolled back: "+name+": "+error.getMessage());
+        }
+    }
+    private void openInternal() {
+        if (disposed || state != State.CLOSED)
             return;
+        try{snapshotClosedGate();}
+        catch(java.io.IOException error){plugin.getLogger().severe("Cannot journal gate; opening refused: "+error.getMessage());return;}
+        animationEpoch++;
 
         if (cleanupTask != null && !cleanupTask.isCancelled()) {
             cleanupTask.cancel();
@@ -328,7 +418,7 @@ public class Gate {
         long totalWait = getDurationTicks() + ANIM_DELAY;
 
         // 状态更新任务：动画结束时切换状态
-        plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
+        later( () -> {
             stopEffects(); // 停止特效
             if (state == State.ANIMATING) {
                 state = State.OPEN;
@@ -337,7 +427,7 @@ public class Gate {
 
         if (!keepOpenDisplays) {
             long delay = totalWait + 5;
-            cleanupTask = plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
+            cleanupTask = later( () -> {
                 if (state == State.OPEN) {
                     cleanupDisplays();
                 }
@@ -347,8 +437,16 @@ public class Gate {
     }
 
     public void close() {
-        if (state != State.OPEN)
+        try{closeInternal();}
+        catch(RuntimeException error){
+            animationEpoch++;stopEffects();cleanupDisplays();state=State.OPEN;
+            plugin.getLogger().severe("Gate closing cancelled: "+name+": "+error.getMessage());
+        }
+    }
+    private void closeInternal() {
+        if (disposed || state != State.OPEN)
             return;
+        animationEpoch++;
 
         if (cleanupTask != null && !cleanupTask.isCancelled()) {
             cleanupTask.cancel();
@@ -371,14 +469,14 @@ public class Gate {
             respawnDisplays(rightRegion, rightDisplays, rightDir);
         }
 
-        plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
+        later( () -> {
             reverseAnimate(leftDisplays, leftDir);
             reverseAnimate(rightDisplays, rightDir);
 
             long safetyCheckDelay = getDurationTicks() - 5;
             if (safetyCheckDelay < 1)
                 safetyCheckDelay = 1;
-            plugin.getServer().getScheduler().runTaskLater(plugin, this::handleSafeMode, safetyCheckDelay);
+            later( this::handleSafeMode, safetyCheckDelay);
         }, 2L);
 
         // 开启特效
@@ -387,14 +485,28 @@ public class Gate {
         long totalWait = getDurationTicks() + ANIM_DELAY;
 
         // 状态更新与方块恢复任务
-        plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
+        later( () -> {
             stopEffects(); // 停止特效
             if (state == State.ANIMATING) {
+                // A push is not proof the doorway is clear. Abort closing if occupied.
+                if (doorwayOccupied()) {
+                    cleanupDisplays(); state = State.OPEN;
+                    plugin.getLogger().warning("Gate " + name + " closure aborted: doorway occupied.");
+                    return;
+                }
                 restoreBlocks();
                 cleanupDisplays(); // 恢复方块后立即清理实体
                 state = State.CLOSED;
             }
         }, totalWait);
+    }
+
+    private boolean doorwayOccupied() {
+        org.bukkit.World world = leftRegion.getWorld();
+        return java.util.stream.Stream.concat(
+                world.getNearbyEntities(getBoundingBox(leftRegion)).stream(),
+                world.getNearbyEntities(getBoundingBox(rightRegion)).stream())
+                .anyMatch(e -> e instanceof org.bukkit.entity.LivingEntity);
     }
 
     private void respawnDisplays(Region region, List<BlockDisplay> targetList, Vector openVector) {
@@ -469,8 +581,10 @@ public class Gate {
             pushEntities(leftBox);
             pushEntities(rightBox);
         } else if (safeMode == SafeMode.BARRIER) {
-            // BARRIER 模式：将区域内的空气临时替换为屏障
-            fillBarriersFromOriginalBlocks();
+            // Never create a collision block inside an occupied doorway.
+            // Legacy BARRIER now uses the same non-solid evacuation as PUSH.
+            pushEntities(leftBox);
+            pushEntities(rightBox);
         }
     }
 
@@ -654,7 +768,7 @@ public class Gate {
         }
 
         // --- 第 1 tick: 触发移动 ---
-        plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
+        later( () -> {
             for (BlockDisplay display : targetDisplays) {
                 if (!display.isValid())
                     continue;
@@ -722,7 +836,7 @@ public class Gate {
         }
 
         // --- 第 1 tick: 触发移动 ---
-        plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
+        later( () -> {
             if (moveMode == MoveMode.TELEPORT) {
                 for (BlockDisplay display : displays) {
                     if (!display.isValid())
@@ -757,6 +871,8 @@ public class Gate {
             world.getBlockAt(k.x(), k.y(), k.z()).setBlockData(entry.getValue(), false);
         }
         originalBlocks.clear();
+        try{java.nio.file.Files.deleteIfExists(checkpoint());}
+        catch(java.io.IOException error){throw new IllegalStateException("Cannot finalize gate recovery: "+error.getMessage(),error);}
     }
 
     public Map<String, Object> serialize() {

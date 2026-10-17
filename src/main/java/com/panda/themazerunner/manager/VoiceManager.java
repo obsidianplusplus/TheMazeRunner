@@ -1,99 +1,31 @@
 package com.panda.themazerunner.manager;
 
-import de.maxhenkel.voicechat.api.BukkitVoicechatService;
-import de.maxhenkel.voicechat.api.Group;
-import de.maxhenkel.voicechat.api.VoicechatApi;
-import de.maxhenkel.voicechat.api.VoicechatConnection;
-import de.maxhenkel.voicechat.api.VoicechatPlugin;
-import de.maxhenkel.voicechat.api.events.EventRegistration;
-import de.maxhenkel.voicechat.api.events.VoicechatServerStartedEvent;
-import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
-
 import java.util.Collection;
 import java.util.List;
-import java.util.UUID;
 
-/**
- * 语音管理器 (Simple Voice Chat 集成)
- * <p>
- * 负责管理 VoiceChat 插件的连接，处理会议语音、静音等逻辑。
- */
-public class VoiceManager implements VoicechatPlugin {
-
+/** No API references: absence of the provided voicechat API must not stop enable. */
+public final class VoiceManager {
     private final JavaPlugin plugin;
-    private VoicechatApi api;
-    private Group meetingGroup;
-
-    public VoiceManager(JavaPlugin plugin) {
-        this.plugin = plugin;
-    }
-
-    /**
-     * 初始化 VoiceChat 服务
-     * 必须在 onEnable 中注册
-     */
+    public VoiceManager(JavaPlugin plugin) { this.plugin = plugin; }
     public void register() {
-        BukkitVoicechatService service = Bukkit.getServicesManager().load(BukkitVoicechatService.class);
-        if (service != null) {
-            service.registerPlugin(this);
-            plugin.getLogger().info("Successfully registered VoiceChat plugin.");
-        } else {
-            plugin.getLogger().warning("DictVoiceChat service not found.");
+        if (!plugin.getServer().getPluginManager().isPluginEnabled("voicechat")) {
+            plugin.getLogger().info("Simple Voice Chat absent: text-based play is available.");
+            return;
+        }
+        try {
+            Class<?> bridge = Class.forName("com.panda.themazerunner.manager.VoiceIntegration");
+            Object instance = bridge.getConstructor(JavaPlugin.class).newInstance(plugin);
+            bridge.getMethod("register").invoke(instance);
+        } catch (ReflectiveOperationException | LinkageError error) {
+            plugin.getLogger().warning("Voice integration unavailable; text fallback: " + error.getClass().getSimpleName());
         }
     }
-
-    @Override
-    public String getPluginId() {
-        return "themazerunner";
-    }
-
-    @Override
-    public void registerEvents(EventRegistration registration) {
-        registration.registerEvent(VoicechatServerStartedEvent.class, this::onServerStarted);
-    }
-
-    private void onServerStarted(VoicechatServerStartedEvent event) {
-        api = event.getVoicechat();
-        plugin.getLogger().info("VoiceChat API initialized.");
-    }
-
-    /**
-     * 创建会议群组并将所有玩家加入
-     * 
-     * @param players 玩家列表
-     */
-    public void startMeetingChat(Collection<Player> players) {
-        if (api == null)
-            return;
-
-        plugin.getLogger().info("Starting Voice Chat Meeting for " + players.size() + " players.");
-    }
-
-    public void stopMeetingChat() {
-        if (api == null)
-            return;
-        // 清理群组逻辑
-    }
-
-    /**
-     * 设置唯一发言者 (用于会议)
-     * 其他参与者将被静音或限制麦克风
-     * <p>
-     * TODO: 目前仅为占位符，需要进一步实现具体的静音逻辑
-     *
-     * @param currentSpeaker      当前发言者
-     * @param meetingParticipants 会议参与者列表
-     */
-    public void setSoleSpeaker(Player currentSpeaker, List<Player> meetingParticipants) {
-        if (api == null)
-            return;
-
-        // TODO: Implement actual voice chat mute logic
-        // This requires manipulating VoicechatConnections or Groups
-        // For now, we just log it as the API usage is complex to implement without docs
-        // in hand
-        plugin.getLogger().info("Setting sole speaker to: " + currentSpeaker.getName());
+    // API 2.5.0 does not establish arbitrary microphone control. Do not claim muting.
+    public void startMeetingChat(Collection<Player> players) { }
+    public void stopMeetingChat() { }
+    public void setSoleSpeaker(Player speaker, List<Player> participants) {
+        for (Player p : participants) p.sendMessage("当前建议发言者：" + speaker.getName() + "（语音自愿轮流发言）");
     }
 }

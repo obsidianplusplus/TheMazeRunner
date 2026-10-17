@@ -5,6 +5,7 @@ import com.panda.themazerunner.game.classes.impl.Builder;
 import com.panda.themazerunner.game.classes.impl.Guardian;
 import com.panda.themazerunner.game.classes.impl.MedJack;
 import com.panda.themazerunner.game.classes.impl.Runner;
+
 import org.bukkit.entity.Player;
 
 import java.util.HashMap;
@@ -13,13 +14,14 @@ import java.util.UUID;
 
 /**
  * 职业管理器
- * <p>
- * 负责管理所有的游戏职业，以及玩家的职业状态。
+ *
+ * <p>负责管理所有的游戏职业，以及玩家的职业状态。
  */
 public class ClassManager {
 
     private final LanguageManager languageManager;
     private final Map<String, GameClass> classes = new HashMap<>();
+    private final Map<UUID, org.bukkit.inventory.ItemStack[]> inventories = new HashMap<>();
     private final Map<UUID, GameClass> playerClasses = new HashMap<>();
 
     /**
@@ -32,9 +34,7 @@ public class ClassManager {
         registerDefaults();
     }
 
-    /**
-     * 注册默认职业
-     */
+    /** 注册默认职业 */
     private void registerDefaults() {
         registerClass(new Runner(languageManager));
         registerClass(new Guardian(languageManager));
@@ -66,7 +66,7 @@ public class ClassManager {
      * 装备职业
      *
      * @param player 玩家
-     * @param id     职业ID
+     * @param id 职业ID
      * @return 是否成功装备
      */
     public boolean equipClass(Player player, String id) {
@@ -79,8 +79,20 @@ public class ClassManager {
         // 如果玩家已经有职业，先卸下
         unequipClass(player);
 
+        inventories.put(player.getUniqueId(), player.getInventory().getContents());
+        player.getInventory().clear();
         // 装备新职业
-        gameClass.onEquip(player);
+        try {
+            gameClass.onEquip(player);
+        } catch (RuntimeException error) {
+            try {
+                gameClass.onUnequip(player);
+            } finally {
+                player.getInventory().clear();
+                player.getInventory().setContents(inventories.remove(player.getUniqueId()));
+            }
+            return false;
+        }
         playerClasses.put(player.getUniqueId(), gameClass);
         return true;
     }
@@ -93,7 +105,14 @@ public class ClassManager {
     public void unequipClass(Player player) {
         if (playerClasses.containsKey(player.getUniqueId())) {
             GameClass gameClass = playerClasses.remove(player.getUniqueId());
-            gameClass.onUnequip(player);
+            try {
+                gameClass.onUnequip(player);
+            } finally {
+                player.getInventory().clear();
+                org.bukkit.inventory.ItemStack[] previous =
+                        inventories.remove(player.getUniqueId());
+                if (previous != null) player.getInventory().setContents(previous);
+            }
         }
     }
 
@@ -103,6 +122,11 @@ public class ClassManager {
      * @param player 玩家
      * @return 职业实例，如果未选择职业则返回 null
      */
+    public void forget(UUID player) {
+        playerClasses.remove(player);
+        inventories.remove(player);
+    }
+
     public GameClass getPlayerClass(Player player) {
         return playerClasses.get(player.getUniqueId());
     }

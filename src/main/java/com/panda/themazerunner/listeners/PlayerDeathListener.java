@@ -19,6 +19,7 @@ public class PlayerDeathListener implements Listener {
 
     @EventHandler
     public void onPlayerDeath(PlayerDeathEvent event) {
+        if (!com.panda.themazerunner.TheMazeRunner.getInstance().getConfig().getBoolean("legacy-meetings-enabled", false)) return;
         // 当任意玩家死亡时，全员获得一次敲钟权 (全局共享)
         areaManager.grantGlobalRingRight();
         for (Player onlinePlayer : org.bukkit.Bukkit.getOnlinePlayers()) {
